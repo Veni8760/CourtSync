@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"decision\":\"block\",\"reason\":\"Before ending this session, check whether tasks/todo.md needs an update based on this session'\"'\"'s work. If anything material happened (commits, file changes, decisions, debugging that landed somewhere), update tasks/todo.md by following the session-end-status-md skill at .claude/skills/session-end-status-md/SKILL.md. If nothing substantive happened (just chat, no file changes), respond with a brief acknowledgement and stop without modifying tasks/todo.md.\"}'",
+            "statusMessage": "Checking whether tasks/todo.md needs an update..."
+          }
+        ]
+      }
+    ]
+  }
+}
