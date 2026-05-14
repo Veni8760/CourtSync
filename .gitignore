@@ -65,3 +65,7 @@ test-results/
 # .claude/settings.json is committed (shared project config).
 # .claude/settings.local.json is for personal/machine-specific overrides only.
 .claude/settings.local.json
+
+# ---------- Design docs (kept locally, not committed) ----------
+volleyiq_mvp_design_document.md
+docs/superpowers/specs/
