@@ -1,0 +1,62 @@
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+
+# ---------- IDE / Editor ----------
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+
+# ---------- Logs ----------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+hs_err_pid*
+
+# ---------- Env / Secrets ----------
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+!.env.example
+!.env.*.example
+*.pem
+*.key
+
+# ---------- Node / Next.js (frontend/) ----------
+node_modules/
+.next/
+out/
+.vercel/
+*.tsbuildinfo
+next-env.d.ts
+.turbo/
+
+# ---------- Java / Gradle (backend/) ----------
+.gradle/
+build/
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+bin/
+out/
+*.class
+target/
+HELP.md
+
+# ---------- Test / coverage ----------
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# ---------- Misc ----------
+*.tmp
+*.bak
