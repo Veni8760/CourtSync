@@ -31,10 +31,15 @@ services:
       - "9092:9092"
     environment:
       # Single-node KRaft (no Zookeeper): this node is both broker and controller.
+      # NOTE: listeners use the empty-host form (://:9092), NOT 0.0.0.0 — the
+      # apache/kafka image derives advertised.listeners from these, and 0.0.0.0
+      # is rejected as a non-routable advertised address. (Apache's own examples
+      # use ://:port too.)
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
