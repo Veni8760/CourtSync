@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: search-service
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:search-service}
+
+server:
+  port: ${SERVER_PORT:8087}
