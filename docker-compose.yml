@@ -95,7 +95,11 @@ services:
         condition: service_healthy
 
   court-service:
-    build: ./services/court-service
+    # Build context is the repo root so the Dockerfile can also COPY shared/proto
+    # (the gRPC contract), which lives outside the service directory.
+    build:
+      context: .
+      dockerfile: services/court-service/Dockerfile
     ports:
       - "8082:8082"   # REST
       - "9090:9090"   # gRPC (CourtService.GetCourt) — consumed by dropin-service
@@ -109,7 +113,11 @@ services:
         condition: service_healthy
 
   dropin-service:
-    build: ./services/dropin-service
+    # Build context is the repo root so the Dockerfile can also COPY shared/proto
+    # (the gRPC contract), which lives outside the service directory.
+    build:
+      context: .
+      dockerfile: services/dropin-service/Dockerfile
     ports:
       - "8083:8083"
     environment:
