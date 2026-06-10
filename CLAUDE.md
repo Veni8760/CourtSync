@@ -32,7 +32,7 @@ Next.js frontend → API Gateway (Spring Cloud Gateway) → REST → domain serv
 Services (`services/`): `api-gateway`, `user-service`, `court-service`, `dropin-service`,
 `messaging-service`, `payment-service`, `search-service` (all **Java Spring Boot**, Maven),
 plus `notification-service` (**Go** — Kafka consumer + `/health`). `frontend/` is Next.js.
-Infra: Postgres, Kafka (KRaft, no Zookeeper), Redis. Later: Elasticsearch, k8s, Rust analytics.
+Infra: hosted Supabase Postgres, local Kafka (KRaft, no Zookeeper), Redis. Later: Elasticsearch, k8s, Rust analytics.
 
 Key rules (from MASTER.md):
 - Build in **vertical slices**, not whole-backend-then-whole-frontend.
@@ -47,14 +47,16 @@ Key rules (from MASTER.md):
   Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083, messaging 8084,
   payment 8085, notification 8086, search 8087).
 - **Go service**: `notification-service` — `cmd/notification-service` + `internal/{config,health,kafka,handlers}`.
-- **DB**: one Postgres database with one schema per DB-backed service, matching hosted Supabase.
+- **DB**: hosted Supabase Postgres, one database with one schema per DB-backed service.
 - **Messaging**: Kafka topics per MASTER §9.1; the load-bearing one for the skeleton is `dropin-events`.
 
 ## Commands
 
 ### Whole stack
-- `docker compose up` — bring up infra + all services (the milestone target)
-- `docker compose up postgres kafka redis` — infra only
+- Set `SUPABASE_DB_PASSWORD` in `.env` before starting DB-backed services.
+- `docker compose up` — bring up local Kafka/Redis + all services against hosted Supabase
+- `docker compose up kafka redis` — local infra only; Supabase is hosted
+- `docker compose --profile local-db up postgres` — optional local Postgres fallback only
 
 ### A Java service (`cd services/<name>`)
 - `./mvnw spring-boot:run` — run locally

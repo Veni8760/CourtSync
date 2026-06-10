@@ -1,13 +1,15 @@
 # CourtSync local stack (MASTER §15).
-# Infra (postgres, kafka, redis) + 8 backend services + frontend.
+# Hosted Supabase Postgres + local Kafka/Redis + services + frontend.
 # Bring up everything:  docker compose up
-# Infra only:           docker compose up postgres kafka redis
+# Infra only:           docker compose up kafka redis
+# Optional local DB:    docker compose --profile local-db up postgres
 
 services:
   # ---------------------------------------------------------------------------
   # Infrastructure
   # ---------------------------------------------------------------------------
   postgres:
+    profiles: ["local-db"]
     image: postgres:17
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-courtsync}
@@ -84,13 +86,11 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=users
-      POSTGRES_USER: ${POSTGRES_USER:-courtsync}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
+      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=users
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
 
@@ -99,13 +99,11 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=courts
-      POSTGRES_USER: ${POSTGRES_USER:-courtsync}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
+      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=courts
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
 
@@ -114,15 +112,13 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=dropins
-      POSTGRES_USER: ${POSTGRES_USER:-courtsync}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
+      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=dropins
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
       redis:
@@ -133,13 +129,11 @@ services:
     ports:
       - "8084:8084"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=messages
-      POSTGRES_USER: ${POSTGRES_USER:-courtsync}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
+      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=messages
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
 
@@ -148,13 +142,11 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=payments
-      POSTGRES_USER: ${POSTGRES_USER:-courtsync}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
+      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=payments
+      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      postgres:
-        condition: service_healthy
       kafka:
         condition: service_healthy
 
