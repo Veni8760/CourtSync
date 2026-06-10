@@ -7,8 +7,12 @@ spring:
     password: ${POSTGRES_PASSWORD:courtsync}
   jpa:
     hibernate:
-      ddl-auto: update
+      # Flyway owns the schema. Hibernate only checks the entity matches the
+      # migrated tables at boot (fails fast on drift) — it never alters the DB.
+      ddl-auto: validate
     open-in-view: false
+  flyway:
+    enabled: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

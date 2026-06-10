@@ -16,7 +16,7 @@ and the previous CLAUDE.md content are historical.
 
 Grouped into phases. We do them in order; each phase should leave the repo runnable.
 
-### Phase 0 — Foundation & infra (THIS SESSION)
+### Phase 0 — Foundation & infra
 - [x] Rewrite root `CLAUDE.md` → point at MASTER.md, correct microservices/Maven/local-Postgres stack
 - [x] Convert `notification-service` from Java scaffold → **Go** module (`cmd/` + `internal/`) with `GET /health` (compiles)
 - [x] Add `GET /health` → `{"service","status":"UP"}` to all 7 Java services (gateway uses reactive Mono)
@@ -27,12 +27,24 @@ Grouped into phases. We do them in order; each phase should leave the repo runna
 - [x] `.env.example` (MASTER §14) + `infra/postgres/init.sql` (per-service DBs)
 - [x] `shared/event-contracts/events.md`
 - [x] `docker compose config` validates (COMPOSE_OK)
-- [ ] **Verify (USER runs): `docker compose up --build` boots; every `/health` returns UP** ← next
+- [x] **Verified: `docker compose up` boots; all 8 `/health` (8080–8087) return UP, frontend 200 (2026-06-09)**
 
-### Phase 1 — Court service (vertical, MASTER step 7)
-- [ ] Court entity / repo / service / controller, Flyway migration for `courts`
-- [ ] API Gateway route `/api/courts/**`
-- [ ] Frontend: courts list + create court form
+### Phase 1 — Court service (vertical, MASTER step 7)  ← DONE
+Backend (court-service, port 8082) — schema via **Flyway** (chosen 2026-06-09):
+- [x] Add Flyway deps to pom (flyway-core + flyway-database-postgresql)
+- [x] `application.yaml`: ddl-auto update → **validate** (Flyway owns schema)
+- [x] `V1__create_courts_table.sql` migration (`surface` + `net_height` refinement over MASTER §8.3)
+- [x] `Surface` enum (INDOOR/GRASS/BEACH) + `NetHeight` enum (MENS/WOMENS/COED)
+- [x] `Court` entity (@Entity → courts table)
+- [x] `CourtRepository` (Spring Data JPA)
+- [x] DTOs: `CreateCourtRequest` (validated) + `CourtResponse`
+- [x] `CourtService` (business logic) + `CourtNotFoundException` (404)
+- [x] `CourtController`: POST /courts, GET /courts, GET /courts/{id}
+- [x] Compiles locally (mvnw compile EXIT 0)
+- [x] Verify (USER): rebuild court-service, curl create + list + get
+- [x] API Gateway route `/api/courts/**` (StripPrefix=1 → court-service `/courts`)
+- [x] Frontend: courts list page (`/courts`) + create court form (`/courts/create`)
+- [x] Verified: api-gateway tests, frontend lint, frontend production build (2026-06-09)
 
 ### Phase 2 — Drop-in service + RSVP + Kafka (MASTER steps 8–12)
 - [ ] Drop-in + drop_in_players tables, entity/repo/service/controller
@@ -50,13 +62,14 @@ Grouped into phases. We do them in order; each phase should leave the repo runna
 ---
 
 ## What we did this session
-- Built out all of Phase 0 except the final `docker compose up` boot check (see above).
-- Decisions: notification-service = Go; full-Docker run strategy (per MASTER); kept custom `/health`
-  controllers (MASTER contract) instead of actuator-only; one Postgres container, 5 DBs via init.sql.
+- Completed Phase 1 court vertical after the user verified court-service create/list/get.
+- Added API Gateway `/api/courts/**` route.
+- Added real-data frontend court list and create form, with Next server actions posting through the gateway.
+- Added `COURTSYNC_API_BASE_URL` for server-side Next calls inside Docker Compose.
 
 ## What's unfinished / open questions
 - Kafka image choice — using apache/kafka KRaft single-broker (no Zookeeper)
 - Local DB: one Postgres container, one database per service via init script (MASTER §7 allows shared for local)
 
 ## What's next (one finishable chunk)
-- Finish Phase 0 and confirm `docker compose up` brings every service to a healthy `/health`.
+- Start Phase 2: implement drop-in tables/entity/repo/service/controller, then RSVP and Kafka events.

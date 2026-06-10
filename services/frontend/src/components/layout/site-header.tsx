@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   Add01Icon,
   ChampionIcon,
+  Location01Icon,
   Search01Icon,
   VolleyballIcon,
 } from "@hugeicons/core-free-icons"
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { href: "/explore", label: "Explore", icon: Search01Icon },
+  { href: "/courts", label: "Courts", icon: Location01Icon },
   { href: "/leaderboard", label: "Leaderboard", icon: ChampionIcon },
 ]
 
@@ -47,6 +49,12 @@ export function SiteHeader() {
             className={cn(buttonVariants({ variant: "ghost" }), "md:hidden")}
           >
             Explore
+          </Link>
+          <Link
+            href="/courts"
+            className={cn(buttonVariants({ variant: "ghost" }), "md:hidden")}
+          >
+            Courts
           </Link>
           <Link
             href="/drop-ins/new"
