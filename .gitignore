@@ -66,6 +66,10 @@ test-results/
 # .claude/settings.local.json is for personal/machine-specific overrides only.
 .claude/settings.local.json
 
+# ---------- Agent Skills (local installs) ----------
+.agents/
+skills-lock.json
+
 # ---------- Design docs (kept locally, not committed) ----------
 volleyiq_mvp_design_document.md
 docs/superpowers/specs/
