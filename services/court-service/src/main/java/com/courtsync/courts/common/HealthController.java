@@ -1,4 +1,4 @@
-package com.courtsync.courts;
+package com.courtsync.courts.common;
 
 import java.util.Map;
 
@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Liveness endpoint required of every CourtSync service (MASTER §16).
- * Returns {"service":"court-service","status":"UP"} so orchestrators and the
- * gateway can confirm the service booted without touching domain logic.
+ * Lives in {@code common/} because it's service-wide infrastructure, not part of
+ * the court feature.
  */
 @RestController
 public class HealthController {

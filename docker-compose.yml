@@ -97,7 +97,8 @@ services:
   court-service:
     build: ./services/court-service
     ports:
-      - "8082:8082"
+      - "8082:8082"   # REST
+      - "9090:9090"   # gRPC (CourtService.GetCourt) — consumed by dropin-service
     environment:
       SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=courts
       SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
@@ -118,11 +119,15 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # gRPC address of court-service (validates court exists on drop-in creation).
+      COURT_GRPC_ADDRESS: static://court-service:9090
     depends_on:
       kafka:
         condition: service_healthy
       redis:
         condition: service_healthy
+      court-service:
+        condition: service_started
 
   messaging-service:
     build: ./services/messaging-service

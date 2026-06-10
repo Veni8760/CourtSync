@@ -1,4 +1,4 @@
-package com.courtsync.courts.court;
+package com.courtsync.courts.court.controller;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.courtsync.courts.court.dto.CourtResponse;
 import com.courtsync.courts.court.dto.CreateCourtRequest;
+import com.courtsync.courts.court.service.CourtService;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 /**
  * REST API for courts (MASTER §8.3):
@@ -26,13 +28,10 @@ import jakarta.validation.Valid;
  */
 @RestController
 @RequestMapping("/courts")
+@RequiredArgsConstructor
 public class CourtController {
 
     private final CourtService service;
-
-    public CourtController(CourtService service) {
-        this.service = service;
-    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

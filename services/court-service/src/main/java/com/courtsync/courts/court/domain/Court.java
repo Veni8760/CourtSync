@@ -1,4 +1,4 @@
-package com.courtsync.courts.court;
+package com.courtsync.courts.court.domain;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -16,8 +16,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * A volleyball court (MASTER §8.3). One @Entity = one row in the {@code courts}
- * table. JPA/Hibernate reads these annotations to map fields ↔ columns.
+ * A volleyball court (MASTER §8.3) — the aggregate root of this service.
+ * One @Entity = one row in the {@code courts} table.
  */
 @Entity
 @Table(name = "courts")
@@ -25,7 +25,7 @@ import lombok.Setter;
 @Setter
 public class Court {
 
-    /** Application-generated UUID (we set it in @PrePersist, not the DB). */
+    /** Application-generated UUID (set in @PrePersist, not the DB). */
     @Id
     private UUID id;
 
@@ -54,7 +54,6 @@ public class Court {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
-    /** Set id + timestamps before the first INSERT. */
     @PrePersist
     void onCreate() {
         if (id == null) {
@@ -65,7 +64,6 @@ public class Court {
         updatedAt = now;
     }
 
-    /** Bump updated_at on every UPDATE. */
     @PreUpdate
     void onUpdate() {
         updatedAt = Instant.now();

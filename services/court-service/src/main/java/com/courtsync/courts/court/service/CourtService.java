@@ -1,4 +1,4 @@
-package com.courtsync.courts.court;
+package com.courtsync.courts.court.service;
 
 import java.util.List;
 import java.util.UUID;
@@ -6,22 +6,26 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.courtsync.courts.court.domain.Court;
 import com.courtsync.courts.court.dto.CourtResponse;
 import com.courtsync.courts.court.dto.CreateCourtRequest;
+import com.courtsync.courts.court.exception.CourtNotFoundException;
+import com.courtsync.courts.court.repository.CourtRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Court business logic. The controller stays thin (HTTP only); anything that
- * isn't request/response plumbing lives here. Constructor injection (no @Autowired
- * needed for a single constructor) gives us the repository.
+ * isn't request/response plumbing lives here. @RequiredArgsConstructor generates
+ * the constructor that injects the repository.
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CourtService {
 
     private final CourtRepository repository;
-
-    public CourtService(CourtRepository repository) {
-        this.repository = repository;
-    }
 
     @Transactional
     public CourtResponse create(CreateCourtRequest req) {
@@ -34,7 +38,9 @@ public class CourtService {
         court.setLongitude(req.longitude());
         court.setSurface(req.surface());
         court.setNetHeight(req.netHeight());
-        return CourtResponse.from(repository.save(court));
+        Court saved = repository.save(court);
+        log.info("Court created: id={} name='{}'", saved.getId(), saved.getName());
+        return CourtResponse.from(saved);
     }
 
     @Transactional(readOnly = true)

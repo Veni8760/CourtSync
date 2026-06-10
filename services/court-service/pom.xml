@@ -28,7 +28,30 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!-- gRPC codegen toolchain. protobuf-java.version is supplied by the Spring Boot
+		     parent; grpc-java drives the protoc-gen-grpc-java code generator + runtime. -->
+		<spring-grpc.version>1.0.3</spring-grpc.version>
+		<grpc-java.version>1.69.0</grpc-java.version>
+		<!-- Pin protoc to the protobuf version grpc-java 1.69 targets (4.x). Do NOT inherit
+		     Boot's protobuf-java.version — Boot 3.5.x is still on 3.25.x, which is incompatible. -->
+		<protoc.version>4.28.2</protoc.version>
+		<protobuf-maven-plugin.version>4.0.3</protobuf-maven-plugin.version>
 	</properties>
+
+	<!-- Spring gRPC isn't part of the Spring Boot BOM, so import its own BOM to get
+	     consistent, tested gRPC/protobuf library versions. -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.grpc</groupId>
+				<artifactId>spring-grpc-dependencies</artifactId>
+				<version>${spring-grpc.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -49,6 +72,12 @@
 		<dependency>
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
+		</dependency>
+		<!-- Spring gRPC: autoconfigures the gRPC server (this service) and the
+		     GrpcChannelFactory for clients. Pulls grpc-stub/grpc-protobuf transitively. -->
+		<dependency>
+			<groupId>org.springframework.grpc</groupId>
+			<artifactId>spring-grpc-spring-boot-starter</artifactId>
 		</dependency>
 
 		<dependency>
@@ -84,6 +113,38 @@
 
 	<build>
 		<plugins>
+			<!-- Generates Java from shared/proto/*.proto on every build: message classes
+			     (protoc) + the gRPC service stub (protoc-gen-grpc-java). Output lands in
+			     target/generated-sources/protobuf/ and is auto-added to the compile path.
+			     sourceDirectories points at the SHARED proto dir so this module and
+			     dropin-service generate from the exact same contract file. -->
+			<plugin>
+				<groupId>io.github.ascopes</groupId>
+				<artifactId>protobuf-maven-plugin</artifactId>
+				<version>${protobuf-maven-plugin.version}</version>
+				<configuration>
+					<protocVersion>${protoc.version}</protocVersion>
+					<sourceDirectories>
+						<sourceDirectory>${project.basedir}/../../shared/proto</sourceDirectory>
+					</sourceDirectories>
+					<binaryMavenPlugins>
+						<binaryMavenPlugin>
+							<groupId>io.grpc</groupId>
+							<artifactId>protoc-gen-grpc-java</artifactId>
+							<version>${grpc-java.version}</version>
+							<!-- Omit @Generated annotations so we don't need an extra annotations dep. -->
+							<options>@generated=omit</options>
+						</binaryMavenPlugin>
+					</binaryMavenPlugins>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
