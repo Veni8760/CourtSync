@@ -1410,12 +1410,14 @@ Create `.env.example`:
 
 ```text
 # Frontend
+COURTSYNC_API_BASE_URL=http://localhost:8080/api
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
 
-# PostgreSQL
-POSTGRES_USER=courtsync
-POSTGRES_PASSWORD=courtsync
-POSTGRES_DB=courtsync
+# Hosted Supabase Postgres
+SUPABASE_PROJECT_REF=aeojyhopmxgtzedqughe
+SUPABASE_JDBC_BASE_URL=jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require
+SUPABASE_DB_USER=postgres
+SUPABASE_DB_PASSWORD=
 
 # Service URLs
 USER_SERVICE_URL=http://user-service:8081
@@ -1465,7 +1467,9 @@ kafka
 redis
 ```
 
-Elasticsearch should be added later.
+Postgres is hosted by Supabase. The local `postgres` Compose service is an optional fallback
+under the `local-db` profile; normal development should use hosted Supabase plus local Kafka
+and Redis. Elasticsearch should be added later.
 
 Suggested ports:
 
@@ -1479,7 +1483,6 @@ messaging-service: 8084
 payment-service: 8085
 notification-service: 8086
 search-service: 8087
-postgres: 5432
 kafka: 9092
 redis: 6379
 ```
@@ -1491,6 +1494,11 @@ The final skeleton should run with:
 ```bash
 docker compose up
 ```
+
+Before starting DB-backed services, set `SUPABASE_DB_PASSWORD` in local `.env`. If the direct
+Supabase endpoint is unreachable from the current network because of IPv6, use Supabase's
+Session Pooler URL in `SUPABASE_JDBC_BASE_URL` and set `SUPABASE_DB_USER` to the pooler
+username, usually `postgres.<project-ref>`.
 
 ---
 
@@ -1590,7 +1598,7 @@ Example:
 The first milestone is complete when:
 
 ```text
-Docker Compose starts PostgreSQL, Kafka, Redis, and all service containers.
+Docker Compose starts local Kafka, Redis, and all service containers against hosted Supabase Postgres.
 Every backend service has a working /health endpoint.
 The frontend loads at http://localhost:3000.
 A user can create a court.

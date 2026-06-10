@@ -1,44 +1,73 @@
-# VolleyIQ
+# CourtSync
 
-A paid drop-in volleyball scheduler: organizers list sessions, players pay to confirm a seat, balanced teams are generated, games are recorded, and ELO ratings update.
+CourtSync is a volleyball drop-in platform built as a learning project for production-grade microservices.
 
-This is a learning project for production-grade backend engineering — modular monolith, outbox-pattern domain events, Stripe Connect, observability, CI/CD. Not a race to ship.
+The current architecture is a Next.js frontend, Spring Boot Java services, a Go notification worker, Kafka, Redis, and hosted Supabase Postgres.
 
 ## Stack
 
 | Layer | Choice | Deploys to |
 |---|---|---|
-| Frontend | Next.js 15 (App Router) + TypeScript + Tailwind + shadcn/ui | Vercel |
-| Backend | Java 21 + Spring Boot 3 + Gradle (Kotlin DSL) + Spring Modulith | Railway |
-| Database | Supabase Postgres (schema owned by Flyway) | Supabase |
-| Auth | Supabase Auth → JWT → Spring `oauth2-resource-server` | — |
-| Payments | Stripe Connect Express (destination charges, 8% platform fee) | — |
-| Email | Resend + React Email | — |
-| Analytics | PostHog | — |
-| Errors | Sentry | — |
-| DNS | Cloudflare | — |
-| Uptime | Uptime Robot + Better Stack | — |
+| Frontend | Next.js + TypeScript + Tailwind | Docker Compose |
+| Backend | Java 21 + Spring Boot 3.5 + Maven | Docker Compose |
+| Notification worker | Go | Docker Compose |
+| Database | Hosted Supabase Postgres, one schema per DB-backed service | Supabase |
+| Messaging | Kafka in KRaft mode | Docker Compose |
+| Cache/locks | Redis | Docker Compose |
 
 ## Canonical design doc
 
 The source of truth for architecture and decisions:
 
-**[`docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md`](docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md)**
+**[`MASTER.md`](MASTER.md)**
 
-The original brainstorming doc (`volleyiq_mvp_design_document.md`) is kept for historical reference.
+Older VolleyIQ/Spring Modulith docs are historical and should not drive new implementation.
 
 ## Repo layout
 
 ```
-frontend/   Next.js app
-backend/    Spring Boot app
-docs/       Design docs and specs
-tasks/      Per-iteration todo + lessons learned
+services/frontend/              Next.js app
+services/*-service/             Backend services
+shared/event-contracts/         Kafka event notes
+infra/postgres/init.sql         Optional local Postgres schema bootstrap
+tasks/                          Working status and next steps
+scripts/                        Local development helpers
 ```
 
 ## Getting started
 
-> Filled in after `frontend/` and `backend/` are scaffolded.
+Create a local `.env` from `.env.example` and set `SUPABASE_DB_PASSWORD`.
+
+Run the currently working court slice:
+
+```bash
+docker compose up --build kafka court-service api-gateway frontend
+```
+
+Open:
+
+```text
+http://localhost:3000/courts
+```
+
+## Database Helper
+
+Use the Supabase psql helper to inspect the hosted Postgres database during development:
+
+```bash
+scripts/supabase-psql.sh
+scripts/supabase-psql.sh courts
+```
+
+Useful psql commands once connected:
+
+```sql
+\dn
+\dt courts.*
+\d courts.courts
+select * from courts.courts;
+\q
+```
 
 ## License
 
