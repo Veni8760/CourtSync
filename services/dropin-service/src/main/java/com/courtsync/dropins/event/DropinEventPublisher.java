@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,9 +56,10 @@ public class DropinEventPublisher {
             String json = objectMapper.writeValueAsString(payload);
             kafkaTemplate.send(topic, key.toString(), json);
             log.debug("Published {} to {} key={}", eventType, topic, key);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             // Serializing our own record should never fail; if it does it's a
-            // programming error, so fail loudly rather than swallow it.
+            // programming error, so fail loudly rather than swallow it. (Jackson 3
+            // exceptions are unchecked, but we still catch to add context.)
             throw new IllegalStateException("Failed to serialize dropin event: " + payload, e);
         }
     }

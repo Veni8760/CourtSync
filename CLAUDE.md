@@ -52,7 +52,10 @@ Three distinct channels — don't conflate them:
   (court owns the data → court is the gRPC server, dropin the client). gRPC runs on its own
   HTTP/2 port (court: 9090) alongside REST (8082). Tooling: official **Spring gRPC**
   (`org.springframework.grpc`, BOM `spring-grpc-dependencies`) + `io.github.ascopes:protobuf-maven-plugin`;
-  pin `protoc`/`grpc-java` versions (Boot 3.5.x's protobuf-java is 3.x — incompatible with grpc-java 1.69's protobuf 4.x).
+  pin `protoc`/`grpc-java` versions to match the `spring-grpc-dependencies` BOM (the imported
+  gRPC BOM governs protobuf/grpc versions, overriding the Boot parent). **spring-grpc's version
+  line dictates the Spring Boot major: 1.0.x ⇒ Boot 4.0.x** (its autoconfig references Boot-4
+  internals; running it on Boot 3.5 fails at *runtime* with `NoClassDefFoundError`, not at build).
   Map domain exceptions to gRPC `Status` codes on the server, translate `StatusRuntimeException`
   back to domain meaning on the client.
 - **Service → service, async ("X happened, others may react"): Kafka.** Still plain JSON strings
@@ -108,9 +111,15 @@ Rules that keep this scalable:
 ## Stack
 
 - **Frontend**: Next.js + TypeScript + Tailwind + shadcn/ui + TanStack Query. pnpm. Port 3000.
-- **Java services**: Java 21 (toolchain Java 26 ok) + Spring Boot 3.5.x + **Maven** (`./mvnw`).
-  Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083, messaging 8084,
-  payment 8085, notification 8086, search 8087).
+- **Java services**: Java 21 (toolchain Java 26 ok) + Spring Boot 4.0.x (Spring Framework 7) +
+  **Maven** (`./mvnw`). Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083,
+  messaging 8084, payment 8085, notification 8086, search 8087). Boot-4 specifics that bit us
+  during the 3.5→4.0 migration: autoconfig is modular, so Kafka needs
+  `spring-boot-starter-kafka` (the raw `spring-kafka` artifact no longer triggers
+  autoconfiguration); the default JSON mapper is **Jackson 3** (`tools.jackson.*`, unchecked
+  exceptions) not Jackson 2 (`com.fasterxml.jackson.*`); Hibernate 7 validates column
+  nullability strictly (entity `@Column(nullable=…)` must match the DB). api-gateway uses
+  Spring Cloud **2025.1.x** (the Boot-4 train) with Spring Cloud Gateway 5.0.
 - **Go service**: `notification-service` — `cmd/notification-service` + `internal/{config,health,kafka,handlers}`.
 - **DB**: hosted Supabase Postgres, one database with one schema per DB-backed service.
 - **Messaging**: Kafka topics per MASTER §9.1; the load-bearing one for the skeleton is `dropin-events`.
