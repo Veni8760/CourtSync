@@ -2,13 +2,20 @@ spring:
   application:
     name: user-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync_users}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync?currentSchema=users}
     username: ${POSTGRES_USER:courtsync}
     password: ${POSTGRES_PASSWORD:courtsync}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: users
+  flyway:
+    enabled: true
+    schemas: users
+    default-schema: users
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

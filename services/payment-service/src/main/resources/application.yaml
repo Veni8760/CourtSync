@@ -2,13 +2,20 @@ spring:
   application:
     name: payment-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync_payments}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync?currentSchema=payments}
     username: ${POSTGRES_USER:courtsync}
     password: ${POSTGRES_PASSWORD:courtsync}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: payments
+  flyway:
+    enabled: true
+    schemas: payments
+    default-schema: payments
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

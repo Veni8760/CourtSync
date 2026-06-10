@@ -333,16 +333,16 @@ Incorrect:
 Drop-In Service directly queries Court Service tables.
 ```
 
-For local development, it is okay to use one PostgreSQL container with multiple databases or schemas.
+For local development and hosted Supabase, use one PostgreSQL database with one schema per service.
 
-Suggested local databases:
+Suggested service schemas:
 
 ```text
-courtsync_users
-courtsync_courts
-courtsync_dropins
-courtsync_messages
-courtsync_payments
+users
+courts
+dropins
+messages
+payments
 ```
 
 ---

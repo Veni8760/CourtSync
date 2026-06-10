@@ -2,7 +2,7 @@ spring:
   application:
     name: court-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync_courts}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync?currentSchema=courts}
     username: ${POSTGRES_USER:courtsync}
     password: ${POSTGRES_PASSWORD:courtsync}
   jpa:
@@ -11,8 +11,13 @@ spring:
       # migrated tables at boot (fails fast on drift) — it never alters the DB.
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: courts
   flyway:
     enabled: true
+    schemas: courts
+    default-schema: courts
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

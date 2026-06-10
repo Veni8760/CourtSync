@@ -47,7 +47,7 @@ Key rules (from MASTER.md):
   Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083, messaging 8084,
   payment 8085, notification 8086, search 8087).
 - **Go service**: `notification-service` — `cmd/notification-service` + `internal/{config,health,kafka,handlers}`.
-- **DB**: one local Postgres container, one database per service (schemas allowed locally).
+- **DB**: one Postgres database with one schema per DB-backed service, matching hosted Supabase.
 - **Messaging**: Kafka topics per MASTER §9.1; the load-bearing one for the skeleton is `dropin-events`.
 
 ## Commands

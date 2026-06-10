@@ -2,13 +2,20 @@ spring:
   application:
     name: dropin-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync_dropins}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync?currentSchema=dropins}
     username: ${POSTGRES_USER:courtsync}
     password: ${POSTGRES_PASSWORD:courtsync}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: dropins
+  flyway:
+    enabled: true
+    schemas: dropins
+    default-schema: dropins
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
   data:

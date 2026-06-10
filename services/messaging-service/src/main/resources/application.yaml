@@ -2,13 +2,20 @@ spring:
   application:
     name: messaging-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync_messages}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/courtsync?currentSchema=messages}
     username: ${POSTGRES_USER:courtsync}
     password: ${POSTGRES_PASSWORD:courtsync}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        default_schema: messages
+  flyway:
+    enabled: true
+    schemas: messages
+    default-schema: messages
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

@@ -17,7 +17,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      # Per-service databases are created on first start.
+      # Per-service schemas are created on first start.
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-courtsync}"]
@@ -84,7 +84,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync_users
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=users
       POSTGRES_USER: ${POSTGRES_USER:-courtsync}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -99,7 +99,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync_courts
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=courts
       POSTGRES_USER: ${POSTGRES_USER:-courtsync}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -114,7 +114,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync_dropins
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=dropins
       POSTGRES_USER: ${POSTGRES_USER:-courtsync}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -133,7 +133,7 @@ services:
     ports:
       - "8084:8084"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync_messages
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=messages
       POSTGRES_USER: ${POSTGRES_USER:-courtsync}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -148,7 +148,7 @@ services:
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync_payments
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/courtsync?currentSchema=payments
       POSTGRES_USER: ${POSTGRES_USER:-courtsync}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtsync}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092

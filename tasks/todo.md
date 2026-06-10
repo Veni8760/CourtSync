@@ -24,7 +24,7 @@ Grouped into phases. We do them in order; each phase should leave the repo runna
 - [x] `application.yaml` per service: distinct ports + datasource (JPA services) via `${VAR:default}`
 - [x] Dockerfile for every backend service (multi-stage) + frontend (Next standalone) + Go (distroless)
 - [x] `docker-compose.yml`: postgres, kafka (KRaft), redis, 8 services, frontend; infra healthchecks + depends_on
-- [x] `.env.example` (MASTER §14) + `infra/postgres/init.sql` (per-service DBs)
+- [x] `.env.example` (MASTER §14) + `infra/postgres/init.sql` (per-service schemas)
 - [x] `shared/event-contracts/events.md`
 - [x] `docker compose config` validates (COMPOSE_OK)
 - [x] **Verified: `docker compose up` boots; all 8 `/health` (8080–8087) return UP, frontend 200 (2026-06-09)**
@@ -69,7 +69,7 @@ Backend (court-service, port 8082) — schema via **Flyway** (chosen 2026-06-09)
 
 ## What's unfinished / open questions
 - Kafka image choice — using apache/kafka KRaft single-broker (no Zookeeper)
-- Local DB: one Postgres container, one database per service via init script (MASTER §7 allows shared for local)
+- Local DB/Supabase shape: one Postgres database with one schema per DB-backed service
 
 ## What's next (one finishable chunk)
 - Start Phase 2: implement drop-in tables/entity/repo/service/controller, then RSVP and Kafka events.
