@@ -5,11 +5,11 @@ import { ResourceNotFoundState } from "@/components/layout/route-states"
 export default function DropInNotFound() {
   return (
     <ResourceNotFoundState
-      badge="Session not found"
+      badge="Drop-in not found"
       title="Drop-in unavailable"
-      description="This pickup session is not in the current VolleyIQ mock schedule."
-      href="/explore"
-      cta="Explore games"
+      description="This drop-in doesn't exist or has been removed."
+      href="/drop-ins"
+      cta="Back to drop-ins"
       icon={VolleyballIcon}
     />
   )
