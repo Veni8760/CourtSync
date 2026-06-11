@@ -35,7 +35,12 @@ export async function cancelRsvpAction(
     await cancelRsvp(dropInId, userId)
   } catch (error) {
     if (error instanceof DropInApiError) {
-      return { ok: false, error: rsvpErrorMessage(error.status) }
+      // 404 on cancel means "you had no active RSVP" — not a missing drop-in.
+      const message =
+        error.status === 404
+          ? "You had no active RSVP to cancel."
+          : rsvpErrorMessage(error.status)
+      return { ok: false, error: message }
     }
     throw error
   }
