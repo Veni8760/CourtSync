@@ -1,4 +1,5 @@
 import { SiteHeader } from "@/components/layout/site-header"
+import { Toaster } from "@/components/ui/sonner"
 
 export default function AppLayout({
   children,
@@ -9,6 +10,7 @@ export default function AppLayout({
     <>
       <SiteHeader />
       {children}
+      <Toaster />
     </>
   )
 }
