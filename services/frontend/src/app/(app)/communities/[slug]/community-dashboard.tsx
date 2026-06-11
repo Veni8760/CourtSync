@@ -11,7 +11,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { SessionCard } from "@/components/drop-ins/session-card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,19 +24,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   toggleCommunityFollow,
   type Community,
-  type DropInSession,
   type LeaderboardEntry,
 } from "@/lib/mock-data"
 
 type CommunityDashboardProps = {
   community: Community
-  sessions: DropInSession[]
   leaderboard: LeaderboardEntry[]
 }
 
 export function CommunityDashboard({
   community: initialCommunity,
-  sessions,
   leaderboard,
 }: CommunityDashboardProps) {
   const [community, setCommunity] = useState(initialCommunity)
@@ -126,23 +122,17 @@ export function CommunityDashboard({
           </TabsList>
 
           <TabsContent value="drop-ins" className="flex flex-col gap-4">
-            {sessions.length > 0 ? (
-              sessions.map((session) => (
-                <SessionCard key={session.id} session={session} />
-              ))
-            ) : (
-              <Empty className="border bg-background">
-                <EmptyMedia variant="icon">
-                  <HugeiconsIcon icon={VolleyballIcon} />
-                </EmptyMedia>
-                <EmptyHeader>
-                  <EmptyTitle>No drop-ins posted yet</EmptyTitle>
-                  <EmptyDescription>
-                    This community has not published an official session.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            )}
+            <Empty className="border bg-background">
+              <EmptyMedia variant="icon">
+                <HugeiconsIcon icon={VolleyballIcon} />
+              </EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>No drop-ins posted yet</EmptyTitle>
+                <EmptyDescription>
+                  This community has not published an official session.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           </TabsContent>
 
           <TabsContent value="tournaments">

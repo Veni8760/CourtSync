@@ -4,7 +4,6 @@ import { CommunityDashboard } from "./community-dashboard"
 import {
   getCommunities,
   getCommunityBySlug,
-  getDropInSessionsByCommunity,
   getLeaderboardByCommunity,
 } from "@/lib/mock-data"
 
@@ -31,7 +30,6 @@ export default async function CommunityPage({ params }: CommunityPageProps) {
   return (
     <CommunityDashboard
       community={community}
-      sessions={getDropInSessionsByCommunity(community.id)}
       leaderboard={getLeaderboardByCommunity(community.id)}
     />
   )
