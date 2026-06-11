@@ -56,6 +56,14 @@ export async function listCourts() {
   return readCourtApiResponse<Court[]>(response)
 }
 
+export async function getCourt(id: string) {
+  const response = await fetch(courtApiUrl(`/courts/${id}`), {
+    cache: "no-store",
+  })
+
+  return readCourtApiResponse<Court>(response)
+}
+
 export async function createCourt(input: CreateCourtInput) {
   const response = await fetch(courtApiUrl("/courts"), {
     method: "POST",
