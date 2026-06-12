@@ -16,6 +16,11 @@ spring:
     enabled: true
     schemas: users
     default-schema: users
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SUPABASE_AUTH_ISSUER:https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 

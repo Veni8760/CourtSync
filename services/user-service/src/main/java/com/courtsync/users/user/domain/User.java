@@ -33,6 +33,10 @@ public class User {
     @Enumerated(EnumType.STRING)
     private SkillLevel skillLevel;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserRole role = UserRole.PLAYER;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -41,7 +45,7 @@ public class User {
 
     @PrePersist
     void onCreate() {
-        if (id == null) id = UUID.randomUUID();
+        if (role == null) role = UserRole.PLAYER;
         Instant now = Instant.now();
         createdAt = now;
         updatedAt = now;

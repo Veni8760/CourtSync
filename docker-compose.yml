@@ -100,6 +100,7 @@ services:
       SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=users
       SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
+      SUPABASE_AUTH_ISSUER: ${SUPABASE_AUTH_ISSUER:-https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       kafka:
@@ -204,6 +205,8 @@ services:
     environment:
       COURTSYNC_API_BASE_URL: ${COURTSYNC_API_BASE_URL:-http://api-gateway:8080/api}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080/api}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://aeojyhopmxgtzedqughe.supabase.co}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
     depends_on:
       - api-gateway
 
