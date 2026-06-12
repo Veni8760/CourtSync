@@ -4,19 +4,66 @@
 // Cross-service UUID columns are NOT real foreign keys.
 // Each microservice owns its own Postgres schema.
 // Cross-service references are noted in column comments.
+//
+// ── Normalization stance ────────────────────────────────────────────────────
+// Every table is in 3NF *within its own service schema*. The three deliberate
+// denormalizations (each one annotated inline where it appears):
+//   1. drop_ins.confirmed_players — counter cache, maintained atomically by
+//      DropIn Service only (avoids Booking querying DropIn's tables).
+//   2. drop_ins.facility_id alongside space_id — space determines facility,
+//      but facility_id is kept for the browse index (facility_id, start_time).
+//      App invariant: if space_id is set, facility_id MUST equal
+//      spaces.facility_id (cross-service, so enforced in code, not FK).
+//   3. drop_ins.space_reservation_id ↔ space_reservations.dropin_id — the
+//      OWNING side is space_reservations.dropin_id (Facility Service);
+//      drop_ins.space_reservation_id is a cached back-reference so DropIn
+//      can render without a cross-service call.
+// Price snapshots (space_reservations.price, payments.amount) are NOT
+// violations: they record the price *agreed at that moment*, a fact about
+// the row itself, not a copy of current pricing.
+//
+// ── updated_at convention ───────────────────────────────────────────────────
+// All updated_at columns are app-maintained via JPA @PreUpdate /
+// @EntityListeners. We do NOT use DB triggers for this — pick one
+// convention and be consistent. Every service must set updated_at on every
+// UPDATE or the value will silently stale.
+//
+// ── timestamp types ─────────────────────────────────────────────────────────
+// All time columns are TIMESTAMPTZ (timestamp with time zone). This stores an
+// absolute UTC instant — essential for booking deadlines (hold_expires_at,
+// confirm_by) and cross-timezone scheduling. 'time' columns in
+// space_availability remain as wall-clock TIME (facility open/close hours
+// are intentionally tz-naive).
+//
+// ── enums ───────────────────────────────────────────────────────────────────
+// Enum values are stored as varchar + a CHECK constraint in the migration
+// (not Postgres ENUM types — ALTER TYPE is painful and JPA maps strings).
+// Every enum column lists its allowed values in its note; the Flyway
+// migration must add: CHECK (col IN (...)).
+//
+// ── Reliability pattern (Phase 3) ───────────────────────────────────────────
+// Each event-producing service (communities, facilities, dropins, bookings)
+// gets its own outbox table (same DB schema, same transaction as the domain
+// write). Each event-consuming service (notification, later payment) gets a
+// processed_events table for at-least-once dedup.
+// See "SCHEMA: outbox_template" section at the bottom for the canonical
+// table shapes.
 
 // ============================================================
 // SCHEMA: users  (user-service :8081)
 // ============================================================
+// NOTE: Authentication lives in Supabase auth.users. This table is
+// the user-service profile mirror — it stores display/skill data
+// only. The id here should match auth.users.id (same UUID).
 
 Table users [note: 'user-service :8081'] {
   id           uuid         [pk]
   email        varchar(255) [unique, not null]
   first_name   varchar(100)
   last_name    varchar(100)
-  skill_level  varchar(50)  [note: 'BEGINNER | INTERMEDIATE | ADVANCED | COMPETITIVE']
-  created_at   timestamp    [default: `CURRENT_TIMESTAMP`]
-  updated_at   timestamp    [default: `CURRENT_TIMESTAMP`]
+  skill_level  varchar(50)  [note: 'BEGINNER | INTERMEDIATE | ADVANCED | COMPETITIVE; null = unset']
+  created_at   timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at   timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 // ============================================================
@@ -29,8 +76,8 @@ Table communities [note: 'community-service :8082'] {
   description  text
   visibility   varchar(50)  [not null, default: 'PUBLIC', note: 'PUBLIC | PRIVATE | INVITE_ONLY']
   created_by   uuid         [not null, note: 'cross-service ref → users.id']
-  created_at   timestamp    [default: `CURRENT_TIMESTAMP`]
-  updated_at   timestamp    [default: `CURRENT_TIMESTAMP`]
+  created_at   timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at   timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
 }
 
 Table community_members {
@@ -38,10 +85,11 @@ Table community_members {
   community_id uuid        [not null, ref: > communities.id]
   user_id      uuid        [not null, note: 'cross-service ref → users.id']
   role         varchar(50) [not null, default: 'MEMBER', note: 'OWNER | ADMIN | ORGANIZER | MEMBER']
-  joined_at    timestamp   [default: `CURRENT_TIMESTAMP`]
+  joined_at    timestamptz [not null, default: `CURRENT_TIMESTAMP`]
 
   indexes {
     (community_id, user_id) [unique]
+    (user_id)  // "my communities" lookup
   }
 }
 
@@ -49,9 +97,23 @@ Table community_join_requests {
   id           uuid        [pk]
   community_id uuid        [not null, ref: > communities.id]
   user_id      uuid        [not null, note: 'cross-service ref → users.id']
-  status       varchar(50) [not null, default: 'PENDING', note: 'PENDING | APPROVED | REJECTED']
-  created_at   timestamp   [default: `CURRENT_TIMESTAMP`]
-  updated_at   timestamp   [default: `CURRENT_TIMESTAMP`]
+  status       varchar(50) [not null, default: 'PENDING', note: 'PENDING | APPROVED | REJECTED | WITHDRAWN']
+  decided_by   uuid        [note: 'cross-service ref → users.id; admin who approved/rejected; null while PENDING']
+  decided_at   timestamptz [note: 'null while PENDING']
+  created_at   timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at   timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE: prevent duplicate pending requests (user may re-apply
+  // after a rejection, so the unique must be partial):
+  //   CREATE UNIQUE INDEX uq_pending_join_request
+  //     ON community_join_requests(community_id, user_id)
+  //     WHERE status = 'PENDING';
+  // Also: CHECK ((status = 'PENDING') = (decided_at IS NULL))
+  // DBML cannot express partial indexes or CHECKs — add in the Flyway migration.
+
+  indexes {
+    (community_id, status)  // admin inbox: pending requests for a community
+  }
 }
 
 // ============================================================
@@ -66,16 +128,23 @@ Table facilities [note: 'facility-service :8083'] {
   province   varchar(100)
   latitude   float
   longitude  float
-  created_at timestamp     [default: `CURRENT_TIMESTAMP`]
-  updated_at timestamp     [default: `CURRENT_TIMESTAMP`]
+  created_at timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE: CHECK ((latitude IS NULL) = (longitude IS NULL))
+  // — coordinates come as a pair or not at all.
 }
 
 Table facility_members {
   id          uuid        [pk]
   facility_id uuid        [not null, ref: > facilities.id]
   user_id     uuid        [not null, note: 'cross-service ref → users.id']
-  role        varchar(50) [not null, default: 'STAFF']
-  created_at  timestamp   [default: `CURRENT_TIMESTAMP`]
+  role        varchar(50) [not null, default: 'STAFF', note: 'OWNER | MANAGER | STAFF']
+  created_at  timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (facility_id, user_id) [unique]  // one membership row per user per facility
+  }
 }
 
 Table spaces {
@@ -84,25 +153,44 @@ Table spaces {
   name        varchar(255) [not null]
   sport       varchar(50)  [not null, default: 'VOLLEYBALL']
   indoor      boolean      [not null, default: true]
-  capacity    integer      [not null]
-  created_at  timestamp    [default: `CURRENT_TIMESTAMP`]
-  updated_at  timestamp    [default: `CURRENT_TIMESTAMP`]
+  capacity    integer      [not null, note: 'CHECK (capacity > 0)']
+  created_at  timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at  timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (facility_id, name) [unique]  // no two same-named courts in one facility
+  }
 }
 
 Table space_availability {
   id          uuid    [pk]
   space_id    uuid    [not null, ref: > spaces.id]
-  day_of_week integer [not null, note: '0=Sun … 6=Sat']
-  open_time   time    [not null]
-  close_time  time    [not null]
+  day_of_week integer [not null, note: '0=Sun … 6=Sat; CHECK (day_of_week BETWEEN 0 AND 6)']
+  open_time   time    [not null, note: 'wall-clock TIME, intentionally tz-naive']
+  close_time  time    [not null, note: 'wall-clock TIME, intentionally tz-naive']
+
+  // MIGRATION NOTE: CHECK (open_time < close_time).
+  // A space may have multiple windows per day (split hours), hence the unique
+  // includes open_time. Overlapping windows on the same day are nonsensical —
+  // enforce with an exclusion constraint if it ever matters:
+  //   EXCLUDE USING gist (space_id WITH =, day_of_week WITH =,
+  //                       timerange(open_time, close_time) WITH &&)
+
+  indexes {
+    (space_id, day_of_week, open_time) [unique]
+  }
 }
 
 Table space_pricing {
   id       uuid          [pk]
   space_id uuid          [not null, ref: > spaces.id]
-  price    decimal(10,2) [not null]
-  currency varchar(10)   [not null, default: 'CAD']
-  unit     varchar(50)   [not null, default: 'PER_HOUR']
+  price    decimal(10,2) [not null, note: 'CHECK (price >= 0)']
+  currency varchar(3)    [not null, default: 'CAD', note: 'ISO 4217']
+  unit     varchar(50)   [not null, default: 'PER_HOUR', note: 'PER_HOUR | PER_SESSION']
+
+  indexes {
+    (space_id, unit) [unique]  // one current price per space per unit; history lives elsewhere if ever needed
+  }
 }
 
 Table space_reservations {
@@ -110,15 +198,41 @@ Table space_reservations {
   space_id            uuid          [not null, ref: > spaces.id]
   reserved_by_user_id uuid          [not null, note: 'cross-service ref → users.id']
   reservation_type    varchar(50)   [not null, note: 'PRIVATE | DROPIN_BACKED']
-  dropin_id           uuid          [note: 'cross-service ref → drop_ins.id; null for PRIVATE']
-  start_time          timestamp     [not null]
-  end_time            timestamp     [not null]
+  dropin_id           uuid          [note: 'cross-service ref → drop_ins.id; OWNING side of the dropin↔reservation link. CHECK: set iff reservation_type = DROPIN_BACKED']
+  start_time          timestamptz   [not null]
+  end_time            timestamptz   [not null]
   status              varchar(50)   [not null, default: 'HELD', note: 'HELD | CONFIRMED | RELEASED | CANCELLED']
-  hold_expires_at     timestamp
-  price               decimal(10,2)
-  currency            varchar(10)   [default: 'CAD']
-  created_at          timestamp     [default: `CURRENT_TIMESTAMP`]
-  updated_at          timestamp     [default: `CURRENT_TIMESTAMP`]
+  hold_expires_at     timestamptz   [note: 'CHECK: required while status = HELD, null otherwise']
+  price               decimal(10,2) [note: 'snapshot of agreed price at reservation time — intentional, not a 3NF violation']
+  currency            varchar(3)    [not null, default: 'CAD', note: 'ISO 4217']
+  created_at          timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at          timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE — four constraints DBML cannot express:
+  //
+  // 1. Double-booking guard (the real one; comments don't stop races):
+  //   CREATE EXTENSION IF NOT EXISTS btree_gist;
+  //   ALTER TABLE space_reservations
+  //     ADD CONSTRAINT no_overlapping_reservations
+  //     EXCLUDE USING gist (
+  //       space_id WITH =,
+  //       tstzrange(start_time, end_time) WITH &&
+  //     )
+  //     WHERE (status IN ('HELD', 'CONFIRMED'));
+  //
+  // 2. CHECK (start_time < end_time)
+  // 3. CHECK ((reservation_type = 'DROPIN_BACKED') = (dropin_id IS NOT NULL))
+  // 4. CHECK ((status = 'HELD') = (hold_expires_at IS NOT NULL))
+  //
+  // One drop-in gets exactly one live reservation:
+  //   CREATE UNIQUE INDEX uq_live_reservation_per_dropin
+  //     ON space_reservations(dropin_id)
+  //     WHERE status IN ('HELD', 'CONFIRMED');
+
+  indexes {
+    (space_id, start_time)         // availability / conflict checks
+    (status, hold_expires_at)      // expiry sweeper: WHERE status='HELD' AND hold_expires_at < now()
+  }
 }
 
 // ============================================================
@@ -129,66 +243,115 @@ Table drop_ins [note: 'dropin-service :8084'] {
   id                   uuid          [pk]
   organizer_user_id    uuid          [not null, note: 'cross-service ref → users.id']
   community_id         uuid          [note: 'cross-service ref → communities.id; null = no community']
-  facility_id          uuid          [note: 'cross-service ref → facilities.id; null = custom location']
-  space_id             uuid          [note: 'cross-service ref → spaces.id']
-  space_reservation_id uuid          [note: 'cross-service ref → space_reservations.id']
-  location_name        varchar(255)  [note: 'used when facility_id is null']
+  facility_id          uuid          [note: 'cross-service ref → facilities.id; null = custom location. Denormalized when space_id is set (must equal spaces.facility_id — app-enforced)']
+  space_id             uuid          [note: 'cross-service ref → spaces.id; if set, facility_id must also be set']
+  space_reservation_id uuid          [note: 'cross-service ref → space_reservations.id; cached back-ref — owning side is space_reservations.dropin_id']
+  location_name        varchar(255)  [note: 'required when facility_id is null (custom location)']
   location_address     varchar(255)
   location_lat         float
   location_lng         float
   title                varchar(255)  [not null]
   description          text
-  start_time           timestamp     [not null]
-  end_time             timestamp     [not null]
+  start_time           timestamptz   [not null]
+  end_time             timestamptz   [not null]
   max_players          integer       [not null]
   minimum_players      integer       [not null, default: 1]
-  confirm_by           timestamp     [note: 'threshold deadline; null = no threshold']
-  skill_level          varchar(50)
-  price                decimal(10,2) [default: 0]
+  confirm_by           timestamptz   [note: 'threshold deadline (absolute instant); null = no minimum threshold']
+  skill_level          varchar(50)   [note: 'BEGINNER | INTERMEDIATE | ADVANCED | COMPETITIVE; null = all levels']
+  price                decimal(10,2) [not null, default: 0, note: 'CHECK (price >= 0)']
+  currency             varchar(3)    [not null, default: 'CAD', note: 'ISO 4217 — a price without a currency is meaningless']
   visibility           varchar(50)   [not null, default: 'PUBLIC', note: 'PUBLIC | MEMBERS_ONLY | INVITE_ONLY']
   status               varchar(50)   [not null, default: 'OPEN', note: 'OPEN | PENDING_CONFIRMATION | CONFIRMED | FULL | CANCELLED | COMPLETED']
-  confirmed_players    integer       [not null, default: 0, note: 'denormalised counter; maintained under row lock']
-  created_at           timestamp     [default: `CURRENT_TIMESTAMP`]
-  updated_at           timestamp     [default: `CURRENT_TIMESTAMP`]
+  confirmed_players    integer       [not null, default: 0, note: 'COUNTER CACHE — mutated ONLY by DropIn Service via ReserveSlot/ReleaseSlot gRPC under Postgres row lock. Booking Service NEVER writes this column. See dropin.proto.']
+  created_at           timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at           timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE — CHECKs (DBML cannot express):
+  //   CHECK (start_time < end_time)
+  //   CHECK (max_players >= 1)
+  //   CHECK (minimum_players BETWEEN 1 AND max_players)
+  //   CHECK (confirmed_players BETWEEN 0 AND max_players)
+  //   CHECK (price >= 0)
+  //   -- a drop-in must have SOME location: facility OR custom
+  //   CHECK (facility_id IS NOT NULL OR location_name IS NOT NULL)
+  //   -- a space implies its facility
+  //   CHECK (space_id IS NULL OR facility_id IS NOT NULL)
+  //   -- confirm_by only makes sense if there is a real minimum to hit,
+  //   -- and must precede the start
+  //   CHECK (confirm_by IS NULL OR confirm_by < start_time)
+
+  indexes {
+    (community_id, start_time)  // drop-ins by community, chronological
+    (facility_id, start_time)   // drop-ins at a facility, chronological
+    (status, start_time)        // browse open/upcoming drop-ins
+    (organizer_user_id)         // "my hosted drop-ins"
+  }
 }
 
 // ============================================================
 // SCHEMA: bookings  (booking-service :8085)
 // ============================================================
+// SINGLE SOURCE OF TRUTH for waitlist state: waitlist_entries.
+// bookings.status deliberately has NO 'WAITLISTED' value — representing
+// the same fact in two tables invites drift. Promotion from waitlist =
+// delete waitlist_entries row + insert/update bookings row, one transaction.
 
 Table bookings [note: 'booking-service :8085'] {
   id              uuid         [pk]
   dropin_id       uuid         [not null, note: 'cross-service ref → drop_ins.id']
   user_id         uuid         [not null, note: 'cross-service ref → users.id']
-  status          varchar(50)  [not null, default: 'CONFIRMED', note: 'PENDING | CONFIRMED | CANCELLED | WAITLISTED']
-  idempotency_key varchar(255) [unique]
-  created_at      timestamp    [default: `CURRENT_TIMESTAMP`]
-  updated_at      timestamp    [default: `CURRENT_TIMESTAMP`]
+  status          varchar(50)  [not null, default: 'PENDING', note: 'PENDING | CONFIRMED | CANCELLED (waitlist lives in waitlist_entries, not here)']
+  idempotency_key varchar(255) [unique, note: 'client-supplied; dedups retried POSTs']
+  cancelled_at    timestamptz  [note: 'null unless status = CANCELLED']
+  created_at      timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at      timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE: the "one booking per user per drop-in" rule must allow
+  // re-booking after a cancellation, so the unique is PARTIAL (a full unique
+  // on (dropin_id, user_id) would permanently block anyone who ever cancelled):
+  //   CREATE UNIQUE INDEX uq_active_booking
+  //     ON bookings(dropin_id, user_id)
+  //     WHERE status <> 'CANCELLED';
+  // Also: CHECK ((status = 'CANCELLED') = (cancelled_at IS NOT NULL))
 
   indexes {
-    (dropin_id, user_id) [unique]
+    (dropin_id, status)  // list/count bookings for a drop-in
+    (user_id, status)    // "my bookings"
   }
 }
 
 Table waitlist_entries {
-  id         uuid      [pk]
-  dropin_id  uuid      [not null, note: 'cross-service ref → drop_ins.id']
-  user_id    uuid      [not null, note: 'cross-service ref → users.id']
-  position   integer   [not null]
-  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+  id         uuid        [pk]
+  dropin_id  uuid        [not null, note: 'cross-service ref → drop_ins.id']
+  user_id    uuid        [not null, note: 'cross-service ref → users.id']
+  position   integer     [not null, note: 'CHECK (position >= 1)']
+  created_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE: rows are DELETED on promotion or cancellation (no soft
+  // state here — bookings is the record of outcomes), so full uniques are
+  // correct. But reordering positions swaps values mid-transaction, so the
+  // position unique must be deferred:
+  //   ALTER TABLE waitlist_entries
+  //     ADD CONSTRAINT uq_waitlist_position UNIQUE (dropin_id, position)
+  //     DEFERRABLE INITIALLY DEFERRED;
 
   indexes {
-    (dropin_id, user_id) [unique]
+    (dropin_id, user_id)   [unique]
+    (dropin_id, position)  [unique, note: 'DEFERRABLE — see migration note']
   }
 }
 
 Table booking_status_history {
   id         uuid        [pk]
   booking_id uuid        [not null, ref: > bookings.id]
-  old_status varchar(50)
+  old_status varchar(50) [note: 'null only for the initial creation row']
   new_status varchar(50) [not null]
-  changed_at timestamp   [default: `CURRENT_TIMESTAMP`]
+  changed_at timestamptz [not null, default: `CURRENT_TIMESTAMP`]
   reason     text
+
+  indexes {
+    (booking_id, changed_at)  // history is always read per-booking, chronological
+  }
 }
 
 // ============================================================
@@ -198,18 +361,28 @@ Table booking_status_history {
 Table notifications [note: 'notification-service :8086'] {
   id         uuid         [pk]
   user_id    uuid         [not null, note: 'cross-service ref → users.id']
-  type       varchar(100) [not null]
+  type       varchar(100) [not null, note: 'e.g. BOOKING_CONFIRMED, DROP_IN_CANCELLED — mirrors event types']
   payload    jsonb
-  status     varchar(50)  [not null, default: 'PENDING']
-  created_at timestamp    [default: `CURRENT_TIMESTAMP`]
+  status     varchar(50)  [not null, default: 'PENDING', note: 'PENDING | SENT | FAILED']
+  created_at timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (user_id, created_at)  // user's notification feed, newest first
+    (status)               // retry sweeper: WHERE status = 'PENDING'
+  }
 }
 
 Table notification_attempts {
-  id              uuid      [pk]
-  notification_id uuid      [not null, ref: > notifications.id]
-  attempted_at    timestamp [not null]
-  success         boolean   [not null]
-  error_message   text
+  id              uuid        [pk]
+  notification_id uuid        [not null, ref: > notifications.id]
+  attempted_at    timestamptz [not null, default: `CURRENT_TIMESTAMP`]
+  success         boolean     [not null]
+  error_message   text        [note: 'null when success = true']
+
+  indexes {
+    (notification_id)  // attempts are read per-notification
+  }
 }
 
 // ============================================================
@@ -219,13 +392,65 @@ Table notification_attempts {
 Table payments [note: 'payment-service :8087 — Phase 4'] {
   id                         uuid          [pk]
   user_id                    uuid          [not null, note: 'cross-service ref → users.id']
-  reference_id               uuid          [not null, note: 'booking_id or reservation_id (cross-service)']
+  reference_id               uuid          [not null, note: 'booking_id or reservation_id (cross-service); interpret via reference_type']
   reference_type             varchar(50)   [not null, note: 'BOOKING | RESERVATION']
-  amount                     decimal(10,2)
-  currency                   varchar(10)   [default: 'CAD']
-  status                     varchar(50)   [default: 'PENDING']
-  stripe_checkout_session_id varchar(255)
-  stripe_payment_intent_id   varchar(255)
-  created_at                 timestamp     [default: `CURRENT_TIMESTAMP`]
-  updated_at                 timestamp     [default: `CURRENT_TIMESTAMP`]
+  amount                     decimal(10,2) [not null, note: 'CHECK (amount >= 0); snapshot of charged amount']
+  currency                   varchar(3)    [not null, default: 'CAD', note: 'ISO 4217']
+  status                     varchar(50)   [not null, default: 'PENDING', note: 'PENDING | COMPLETED | FAILED | REFUNDED']
+  stripe_checkout_session_id varchar(255)  [unique]
+  stripe_payment_intent_id   varchar(255)  [unique]
+  created_at                 timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at                 timestamptz   [not null, default: `CURRENT_TIMESTAMP`]
+
+  // MIGRATION NOTE: one live payment per reference — partial unique so a
+  // FAILED attempt can be retried:
+  //   CREATE UNIQUE INDEX uq_live_payment_per_reference
+  //     ON payments(reference_type, reference_id)
+  //     WHERE status IN ('PENDING', 'COMPLETED');
+
+  indexes {
+    (reference_type, reference_id)  // "payment for this booking/reservation"
+    (user_id, created_at)           // user's payment history
+  }
+}
+
+// ============================================================
+// SCHEMA: outbox_template  (Phase 3 — Reliability)
+// ============================================================
+// Each event-PRODUCING service (communities, facilities, dropins, bookings)
+// gets its own copy of the outbox table in its own DB schema.
+// Pattern: write the domain row AND the outbox row in the SAME transaction.
+// A background poller reads WHERE published_at IS NULL, publishes to Kafka,
+// then stamps published_at. This prevents the dual-write problem where a
+// service commits but crashes before publishing (event lost) or publishes
+// then crashes before committing (phantom event).
+//
+// Each event-CONSUMING service (notification, later payment) gets its own
+// copy of processed_events in its own schema, keyed on Kafka event_id.
+// Dedup check: before processing, INSERT … ON CONFLICT DO NOTHING. If
+// 0 rows inserted → already processed → skip. This makes consumers safe
+// under Kafka's at-least-once delivery guarantee.
+
+Table outbox [note: 'template — copy into each producing service schema; Phase 3'] {
+  id           uuid         [pk, note: 'event id — becomes the Kafka message key; consumers dedup on it']
+  aggregate_id uuid         [not null, note: 'e.g. dropin_id, booking_id — the root entity that changed']
+  event_type   varchar(100) [not null, note: 'e.g. BOOKING_CREATED, DROP_IN_CONFIRMED']
+  topic        varchar(100) [not null, note: 'Kafka topic, e.g. booking-events']
+  payload      jsonb        [not null, note: 'serialised event body; matches events.md contract']
+  created_at   timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+  published_at timestamptz  [note: 'null = not yet drained to Kafka; set by poller after successful publish']
+
+  indexes {
+    (published_at)  // poller query: WHERE published_at IS NULL ORDER BY created_at
+  }
+}
+
+Table processed_events [note: 'template — copy into each consuming service schema; Phase 3'] {
+  event_id     uuid         [not null, note: 'outbox.id from the producer — globally unique']
+  handler      varchar(100) [not null, note: 'consumer handler name; lets one service process the same event in two handlers independently']
+  processed_at timestamptz  [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (event_id, handler) [pk]  // composite pk: dedup is per event PER handler
+  }
 }

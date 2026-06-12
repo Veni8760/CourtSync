@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-11_
+_Last updated: 2026-06-12_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -125,13 +125,34 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - [x] Runtime boot against hosted Supabase verified (full stack up; see below)
 
 ### Phase 3 — Polish skeleton
-- [ ] User service CRUD, messaging/payment placeholders, error handling, validation, logging
+- [x] **user-service vertical (DONE 2026-06-12, branch `feature/user-service-vertical`):**
+  `V1__create_users_table.sql` (timestamptz + skill_level CHECK per hardened DBML),
+  `com.courtsync.users.user/*` feature package mirroring court-service, duplicate-email →
+  409 (existsByEmail pre-check + DB UNIQUE backstop), gateway `/api/users/**` route,
+  HealthController → `common/`. Verified live through gateway: 201/200/409/404/400.
+- [x] **fix(flyway): Boot 4 needs `spring-boot-starter-flyway`** — raw flyway-core silently
+  stopped running migrations after the 3.5→4.0 migration; swapped in all 5 DB-backed poms;
+  court+dropin rebuilt and re-validated their existing schema history clean.
+- [ ] messaging/payment placeholders, cross-cutting error handling, validation, logging
 
 ### Later (NOT in skeleton): auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics.
 
 ---
 
-## What we did this session
+## What we did this session (2026-06-12)
+- **Normalized the DBML schema** (`docs/schema/courtsync.dbml`): 3NF pass with documented
+  intentional denormalizations, CHECKs for every invariant, partial uniques (re-book after
+  cancel, one live reservation/payment per ref), deferrable waitlist position unique,
+  single-source-of-truth waitlist (dropped WAITLISTED from bookings.status), currency on
+  drop_ins.price, ISO-4217 everywhere.
+- **Built the Phase 3 user-service vertical** (branch `feature/user-service-vertical`,
+  3 commits): Flyway V1 (timestamptz convention), full feature package, 409-on-duplicate-email,
+  gateway route. Verified live: 201/200/409/404/400 through the gateway.
+- **Found + fixed a silent Boot 4 regression**: Flyway hadn't been running since the 3.5→4.0
+  migration (`flyway-core` doesn't autoconfigure on Boot 4 — needs `spring-boot-starter-flyway`).
+  Swapped in all 5 DB-backed poms; rebuilt court+dropin to confirm clean history validation.
+
+## Previous session (2026-06-11)
 - Built the **Phase 2 drop-in frontend vertical** via subagent-driven-development (8 tasks + two-stage review each), all UI from shadcn registry components (no hand-written primitives). Locked decisions: real-but-simpler pages (replacing the abandoned VolleyIQ mock) + stable per-browser dev identity.
 - Files: `lib/dropins.ts`, `getCourt` in `lib/courts.ts`, `lib/dev-identity.ts` (`useSyncExternalStore`), components (drop-in card, create form, rsvp panel, dev-player badge), routes (list, create, detail, loading, not-found) with server actions for create/rsvp/cancel. Deleted mock signup/checkout cruft.
 - Final holistic review caught + fixed a blocker (site-header "Host" linked to deleted `/drop-ins/new` → `/drop-ins/create`) plus 2 minor copy fixes. `pnpm lint` + `pnpm build` green; live smoke tests pass.
@@ -147,18 +168,15 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
 
 ## What's next (one finishable chunk)
-**Phase 3 — user-service vertical.** Scope: give `user-service` (port 8081) a real CRUD slice
-mirroring the court/dropin pattern (Flyway schema → entity/repo/DTO/service/controller, gateway
-route). **Done when** `POST /api/users` creates a user and `GET /api/users/{id}` returns it
-through the gateway against the running stack.
-- [ ] `V1__create_users.sql` Flyway migration (schema `users`) + `ddl-auto: validate`
-- [ ] `User` entity + `UserRepository` + DTOs (CreateUserRequest validated, UserResponse)
-- [ ] `UserService` + `UserNotFoundException` (404) + `UserController` (POST/GET/GET)
-- [ ] api-gateway route `/api/users/**` → user-service (StripPrefix=1)
-- [ ] Verify: `./mvnw compile`, then curl create+get through the gateway
+**Open a PR for `feature/user-service-vertical` and merge it**, then pick the next Phase 3
+slice: a **GlobalExceptionHandler** (`common/`) for court+dropin+user — consistent JSON error
+bodies for 400/404/409 instead of Spring's defaults. **Done when** all three services return
+the same error shape (curl-verified) and the pattern is documented in CLAUDE.md.
 
 Out of scope (parked):
-- Merge/iterate PR #2 (separate from the build work above)
+- `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
+- MASTER.md §8.6/§10.3 still say "Booking acquires a row lock on drop_ins.confirmed_players" —
+  contradicts the decided ReserveSlot/ReleaseSlot gRPC design; reconcile in a MASTER edit
 - Phase 2 deferred: migrate Kafka event payloads from JSON to Protobuf (touches Go + search + TS)
 - Phase 3 rest: messaging/payment placeholders, cross-cutting error handling
 - Later: auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics

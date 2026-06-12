@@ -107,6 +107,18 @@
         "schemaName": "public",
         "x": 616,
         "y": 16
+      },
+      {
+        "name": "outbox",
+        "schemaName": "public",
+        "x": 16,
+        "y": 2346
+      },
+      {
+        "name": "processed_events",
+        "schemaName": "public",
+        "x": 327.7333984375,
+        "y": 2346
       }
     ],
     "tableGroupCollapseStates": [],

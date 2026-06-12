@@ -6,6 +6,12 @@ spring:
       server:
         webflux:
           routes:
+            - id: user-service
+              uri: ${USER_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/users,/api/users/**
+              filters:
+                - StripPrefix=1
             - id: court-service
               uri: ${COURT_SERVICE_URL:http://localhost:8082}
               predicates:
