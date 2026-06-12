@@ -108,6 +108,19 @@ Rules that keep this scalable:
   / cancelled) at `info`; event publish/consume at `info` (consumers) or `debug` (producers);
   recoverable problems at `warn`. No logging in getters, DTOs, or on every method entry.
 
+### Error handling convention (apply to all Java services)
+
+Every REST error is an **RFC 9457 ProblemDetail** (`application/problem+json`), produced by
+`common/GlobalExceptionHandler` (`@RestControllerAdvice extends ResponseEntityExceptionHandler`)
+— same class body in every service, copied by convention (never a shared jar). Rules:
+- Domain exceptions keep `@ResponseStatus` + a constructor message; the advice reads the
+  annotation generically (`AnnotatedElementUtils.findMergedAnnotation`), so **new exceptions
+  need zero handler changes** — never add per-exception `@ExceptionHandler` methods.
+- Validation failures (400) carry a `properties.errors` map of `field → message`.
+- Unannotated/unexpected exceptions → 500 with generic detail only (**never leak internals**);
+  log at `error` with stack trace. Domain errors log at `warn`.
+- Frontend reads `detail` from error bodies (`getErrorMessage` in `src/lib/{dropins,courts}.ts`).
+
 ## Stack
 
 - **Frontend**: Next.js + TypeScript + Tailwind + shadcn/ui + TanStack Query. pnpm. Port 3000.
