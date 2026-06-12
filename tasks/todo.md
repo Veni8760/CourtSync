@@ -133,7 +133,14 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - [x] **fix(flyway): Boot 4 needs `spring-boot-starter-flyway`** — raw flyway-core silently
   stopped running migrations after the 3.5→4.0 migration; swapped in all 5 DB-backed poms;
   court+dropin rebuilt and re-validated their existing schema history clean.
-- [ ] messaging/payment placeholders, cross-cutting error handling, validation, logging
+- [x] **GlobalExceptionHandler (DONE 2026-06-12, branch `feature/global-exception-handler`):**
+  RFC 9457 ProblemDetail (`application/problem+json`) across court+dropin+user via
+  `common/GlobalExceptionHandler extends ResponseEntityExceptionHandler`. Generic
+  `@ResponseStatus`-reading handler (new exceptions need zero handler changes), validation
+  400s carry `errors:{field→msg}`, 500s never leak internals. Frontend `getErrorMessage`
+  reads `detail`. Convention documented in CLAUDE.md. Curl-verified every error path incl.
+  gRPC-translated court-not-found and duplicate RSVP; happy paths unchanged.
+- [ ] messaging/payment placeholders, remaining cross-cutting polish
 
 ### Later (NOT in skeleton): auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics.
 
@@ -151,6 +158,10 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - **Found + fixed a silent Boot 4 regression**: Flyway hadn't been running since the 3.5→4.0
   migration (`flyway-core` doesn't autoconfigure on Boot 4 — needs `spring-boot-starter-flyway`).
   Swapped in all 5 DB-backed poms; rebuilt court+dropin to confirm clean history validation.
+- **Merged PR #3** (user vertical + Flyway fix + schema docs), then built the
+  **GlobalExceptionHandler chunk**: RFC 9457 ProblemDetail everywhere, annotation-driven
+  generic handler, field-level validation errors, leak-proof 500s, frontend `detail` parsing,
+  CLAUDE.md convention. Verified live: 7 error paths + happy paths through the gateway.
 
 ## Previous session (2026-06-11)
 - Built the **Phase 2 drop-in frontend vertical** via subagent-driven-development (8 tasks + two-stage review each), all UI from shadcn registry components (no hand-written primitives). Locked decisions: real-but-simpler pages (replacing the abandoned VolleyIQ mock) + stable per-browser dev identity.
@@ -168,10 +179,11 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
 
 ## What's next (one finishable chunk)
-**Open a PR for `feature/user-service-vertical` and merge it**, then pick the next Phase 3
-slice: a **GlobalExceptionHandler** (`common/`) for court+dropin+user — consistent JSON error
-bodies for 400/404/409 instead of Spring's defaults. **Done when** all three services return
-the same error shape (curl-verified) and the pattern is documented in CLAUDE.md.
+**Open a PR for `feature/global-exception-handler` and merge it** (PR #3 for the user vertical
+is already merged), then the last Phase 3 slice: **messaging + payment placeholder services** —
+each gets its Flyway V1 (per the hardened DBML), an empty feature package skeleton, and stays
+bootable. **Done when** the full `docker compose up` stack is healthy with all services
+validating their schemas.
 
 Out of scope (parked):
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
