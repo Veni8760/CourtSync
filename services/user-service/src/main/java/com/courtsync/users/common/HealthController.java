@@ -1,4 +1,4 @@
-package com.courtsync.users;
+package com.courtsync.users.common;
 
 import java.util.Map;
 
