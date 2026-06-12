@@ -57,7 +57,7 @@ export function SiteHeader() {
             Courts
           </Link>
           <Link
-            href="/drop-ins/new"
+            href="/drop-ins/create"
             className={cn(buttonVariants({ variant: "default" }))}
           >
             <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />

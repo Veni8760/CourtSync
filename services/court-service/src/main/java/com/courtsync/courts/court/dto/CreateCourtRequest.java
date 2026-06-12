@@ -1,7 +1,7 @@
 package com.courtsync.courts.court.dto;
 
-import com.courtsync.courts.court.NetHeight;
-import com.courtsync.courts.court.Surface;
+import com.courtsync.courts.court.domain.NetHeight;
+import com.courtsync.courts.court.domain.Surface;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

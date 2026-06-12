@@ -6,8 +6,10 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import Link from "next/link"
+
 import { CommunityCard } from "@/components/communities/community-card"
-import { SessionCard } from "@/components/drop-ins/session-card"
+import { buttonVariants } from "@/components/ui/button"
 import {
   Empty,
   EmptyDescription,
@@ -16,10 +18,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  getCommunities,
-  getIndependentDropInSessions,
-} from "@/lib/mock-data"
+import { getCommunities } from "@/lib/mock-data"
 
 export const metadata: Metadata = {
   title: "Explore | VolleyIQ",
@@ -28,7 +27,6 @@ export const metadata: Metadata = {
 
 export default function ExplorePage() {
   const communities = getCommunities()
-  const independentSessions = getIndependentDropInSessions()
 
   return (
     <main className="min-h-screen bg-muted/30">
@@ -87,24 +85,20 @@ export default function ExplorePage() {
           </TabsContent>
 
           <TabsContent value="pickup-games" className="flex flex-col gap-4">
-            {independentSessions.length > 0 ? (
-              independentSessions.map((session) => (
-                <SessionCard key={session.id} session={session} />
-              ))
-            ) : (
-              <Empty className="min-h-72 border bg-background">
-                <EmptyMedia variant="icon">
-                  <HugeiconsIcon icon={VolleyballIcon} />
-                </EmptyMedia>
-                <EmptyHeader>
-                  <EmptyTitle>No pickup games posted</EmptyTitle>
-                  <EmptyDescription>
-                    Independent pickup games will appear here once hosts publish
-                    them.
-                  </EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            )}
+            <Empty className="min-h-72 border bg-background">
+              <EmptyMedia variant="icon">
+                <HugeiconsIcon icon={VolleyballIcon} />
+              </EmptyMedia>
+              <EmptyHeader>
+                <EmptyTitle>Browse drop-in sessions</EmptyTitle>
+                <EmptyDescription>
+                  View all open drop-in sessions on the drop-ins page.
+                </EmptyDescription>
+              </EmptyHeader>
+              <Link href="/drop-ins" className={buttonVariants({ variant: "outline" })}>
+                View drop-ins
+              </Link>
+            </Empty>
           </TabsContent>
         </Tabs>
       </section>

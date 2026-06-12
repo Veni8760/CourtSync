@@ -1,0 +1,48 @@
+// CourtSync — court-service gRPC contract.
+//
+// This .proto is the SINGLE SOURCE OF TRUTH for the synchronous court lookup that
+// other services make. court-service implements it (the server); any service that
+// needs to validate/read a court generates a client stub from this same file.
+//
+// It lives in shared/ on purpose: it is a *contract*, not shared compiled code.
+// Each service runs protoc against it and gets its OWN generated classes — so a
+// change here is a deliberate, reviewable change to the wire format, and nothing
+// is coupled at compile time across services. (Today: Java↔Java. The same file
+// could later generate Go/TS stubs without any of them sharing code.)
+syntax = "proto3";
+
+// Wire-level namespace. Versioned (v1) so we can introduce a breaking v2 contract
+// side-by-side later without forcing every caller to upgrade at once.
+package courtsync.court.v1;
+
+// Generate one Java class per message/service (instead of one giant outer class),
+// under this package. This is what our Java code imports.
+option java_multiple_files = true;
+option java_package = "com.courtsync.proto.court.v1";
+
+// The service = the set of RPCs court-service exposes over gRPC. protoc-gen-grpc-java
+// turns this into CourtServiceGrpc (server base class + client stub) for us.
+service CourtService {
+  // Look up one court by id. Server returns NOT_FOUND (a gRPC status code, the
+  // equivalent of HTTP 404) when no such court exists — the client maps that to
+  // its own domain meaning.
+  rpc GetCourt(GetCourtRequest) returns (GetCourtResponse);
+}
+
+message GetCourtRequest {
+  string id = 1; // court UUID as a string (proto3 has no native UUID type)
+}
+
+message GetCourtResponse {
+  Court court = 1;
+}
+
+// A minimal view of a court — just what a caller needs to validate/identify one.
+// Deliberately NOT the full entity: consumers should depend on the least they need.
+// Enums are sent as their name strings (e.g. "BEACH", "COED") to keep v1 simple.
+message Court {
+  string id = 1;
+  string name = 2;
+  string surface = 3;
+  string net_height = 4;
+}

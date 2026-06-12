@@ -37,15 +37,89 @@ Infra: hosted Supabase Postgres, local Kafka (KRaft, no Zookeeper), Redis. Later
 Key rules (from MASTER.md):
 - Build in **vertical slices**, not whole-backend-then-whole-frontend.
 - Each service owns its own data; never query another service's tables — call its API.
-- Kafka is for "something happened, others may react" — **not** request/response. Reads/writes use REST.
+- Kafka is for "something happened, others may react" — **not** request/response.
 - Every backend service exposes `GET /health` → `{"service":"<name>","status":"UP"}`.
+
+### Inter-service communication & contracts
+
+Three distinct channels — don't conflate them:
+- **Browser → backend: REST/JSON** through the API gateway. gRPC isn't browser-native, so the
+  edge stays REST. This is the *only* place REST is used cross-process.
+- **Service → service, synchronous (request/response): gRPC.** Defined by a `.proto` in
+  `shared/proto/` (single source of truth — a *contract*, not shared compiled code; each service
+  runs `protoc` and gets its own generated stubs). Reference impl: `dropin-service` calls
+  `court-service`'s `CourtService.GetCourt` to validate a court exists before creating a drop-in
+  (court owns the data → court is the gRPC server, dropin the client). gRPC runs on its own
+  HTTP/2 port (court: 9090) alongside REST (8082). Tooling: official **Spring gRPC**
+  (`org.springframework.grpc`, BOM `spring-grpc-dependencies`) + `io.github.ascopes:protobuf-maven-plugin`;
+  pin `protoc`/`grpc-java` versions to match the `spring-grpc-dependencies` BOM (the imported
+  gRPC BOM governs protobuf/grpc versions, overriding the Boot parent). **spring-grpc's version
+  line dictates the Spring Boot major: 1.0.x ⇒ Boot 4.0.x** (its autoconfig references Boot-4
+  internals; running it on Boot 3.5 fails at *runtime* with `NoClassDefFoundError`, not at build).
+  Map domain exceptions to gRPC `Status` codes on the server, translate `StatusRuntimeException`
+  back to domain meaning on the client.
+- **Service → service, async ("X happened, others may react"): Kafka.** Still plain JSON strings
+  per `shared/event-contracts/events.md` (the Go + search consumers decode it). **Deferred:**
+  migrating Kafka payloads to Protobuf (touches Go + search + frontend TS + likely a schema
+  registry) — a separate phase, not done yet.
+
+## Java package structure (standard for ALL Java services)
+
+**Feature-by-aggregate, layered within.** Top-level packages are *features* (one per DDD
+aggregate), and each feature is split by *layer* underneath. Reference implementations:
+`court-service` (one aggregate) and `dropin-service` (two: `dropin` + `rsvp`).
+
+```
+com.courtsync.<svc>/
+  <Svc>Application.java
+  common/        service-wide infra not tied to a feature (HealthController, later GlobalExceptionHandler)
+  event/         Kafka publishers + event payload records (shared leaf; depends on nothing)
+  <feature>/     ONE package per AGGREGATE (e.g. dropin/, rsvp/, court/)
+    domain/      @Entity classes + enums. Put business invariants ON the entity (rich domain
+                 model), e.g. DropIn.reserveSpot()/releaseSpot() — not in the service.
+    repository/  Spring Data interfaces
+    service/     @Service business logic; thin
+    controller/  @RestController; HTTP plumbing only
+    dto/         request/response records (never expose entities on the wire)
+    exception/   custom exceptions (@ResponseStatus → HTTP code)
+```
+
+Rules that keep this scalable:
+- **One feature package = one aggregate**, NOT one operation. RSVP lives *inside* `dropin/`'s
+  sibling `rsvp/` only because DropInPlayer is its own aggregate-ish concern; capacity rules
+  stay on the `DropIn` root. When in doubt, fewer feature packages.
+- **Dependencies between feature packages must be acyclic and one-way.** `rsvp → dropin` is
+  allowed; `dropin → rsvp` is NOT. To avoid a cycle, `drop_ins` carries a denormalized
+  `confirmed_players` counter (maintained under the row lock) so `dropin/` never has to query
+  `rsvp/` for a count. Verify with: `grep -rn "import ...<other-feature>" <feature>/`.
+- A second aggregate in a service = a new sibling feature package with the same internal layers.
+
+### Lombok & logging conventions (apply to all Java code)
+
+- **Constructor injection via `@RequiredArgsConstructor`.** Make injected deps `private final`
+  and let Lombok generate the constructor — do NOT hand-write `public XService(...) {}`.
+- **Entities: `@Getter @Setter` ONLY.** Never `@Data`/`@EqualsAndHashCode`/`@ToString` on an
+  `@Entity` — they generate equals/hashCode/toString over all fields, which triggers lazy
+  loading, breaks JPA identity, and can `StackOverflowError` on relationships. Records (DTOs,
+  events) need no Lombok.
+- **Logging via `@Slf4j`** (SLF4J). Use `{}` placeholders, never string concatenation:
+  `log.info("RSVP confirmed: dropIn={} user={}", dropInId, userId)`.
+- **Log only meaningful events**, not boilerplate: business state changes (created / confirmed
+  / cancelled) at `info`; event publish/consume at `info` (consumers) or `debug` (producers);
+  recoverable problems at `warn`. No logging in getters, DTOs, or on every method entry.
 
 ## Stack
 
 - **Frontend**: Next.js + TypeScript + Tailwind + shadcn/ui + TanStack Query. pnpm. Port 3000.
-- **Java services**: Java 21 (toolchain Java 26 ok) + Spring Boot 3.5.x + **Maven** (`./mvnw`).
-  Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083, messaging 8084,
-  payment 8085, notification 8086, search 8087).
+- **Java services**: Java 21 (toolchain Java 26 ok) + Spring Boot 4.0.x (Spring Framework 7) +
+  **Maven** (`./mvnw`). Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083,
+  messaging 8084, payment 8085, notification 8086, search 8087). Boot-4 specifics that bit us
+  during the 3.5→4.0 migration: autoconfig is modular, so Kafka needs
+  `spring-boot-starter-kafka` (the raw `spring-kafka` artifact no longer triggers
+  autoconfiguration); the default JSON mapper is **Jackson 3** (`tools.jackson.*`, unchecked
+  exceptions) not Jackson 2 (`com.fasterxml.jackson.*`); Hibernate 7 validates column
+  nullability strictly (entity `@Column(nullable=…)` must match the DB). api-gateway uses
+  Spring Cloud **2025.1.x** (the Boot-4 train) with Spring Cloud Gateway 5.0.
 - **Go service**: `notification-service` — `cmd/notification-service` + `internal/{config,health,kafka,handlers}`.
 - **DB**: hosted Supabase Postgres, one database with one schema per DB-backed service.
 - **Messaging**: Kafka topics per MASTER §9.1; the load-bearing one for the skeleton is `dropin-events`.

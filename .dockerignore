@@ -1,0 +1,27 @@
+# Applies to builds whose context is the repo root (court-service, dropin-service —
+# both need shared/proto, so their context is the root rather than the service dir).
+# Keep the tarball sent to the Docker daemon small: exclude build output, deps, VCS,
+# and planning docs. Java source trees are tiny and stay in.
+
+# Build output
+**/target/
+**/build/
+**/*.jar
+!**/.mvn/wrapper/maven-wrapper.jar
+
+# Frontend deps / output (never needed by the Java image builds)
+services/frontend/
+
+# Go build artifacts
+**/*.exe
+
+# VCS + tooling
+.git/
+.github/
+.idea/
+.vscode/
+
+# Project planning / notes (not part of any image)
+.planning/
+tasks/
+*.md

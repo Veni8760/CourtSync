@@ -3,9 +3,9 @@ package com.courtsync.courts.court.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.courtsync.courts.court.Court;
-import com.courtsync.courts.court.NetHeight;
-import com.courtsync.courts.court.Surface;
+import com.courtsync.courts.court.domain.Court;
+import com.courtsync.courts.court.domain.NetHeight;
+import com.courtsync.courts.court.domain.Surface;
 
 /**
  * Outgoing JSON for GET/POST /courts. Built from a Court entity via {@link #from}.

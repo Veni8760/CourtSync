@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.5.14</version>
+		<version>4.0.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.courtsync</groupId>
@@ -28,7 +28,28 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<!-- gRPC codegen toolchain — kept identical to court-service so both modules
+		     generate from the same shared/proto contract with matching versions. -->
+		<spring-grpc.version>1.0.3</spring-grpc.version>
+		<grpc-java.version>1.69.0</grpc-java.version>
+		<!-- Pin protoc to the protobuf version grpc-java 1.69 targets (4.x), not Boot's 3.25.x. -->
+		<protoc.version>4.28.2</protoc.version>
+		<protobuf-maven-plugin.version>4.0.3</protobuf-maven-plugin.version>
 	</properties>
+
+	<!-- Spring gRPC isn't in the Spring Boot BOM; import its own BOM for aligned versions. -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.grpc</groupId>
+				<artifactId>spring-grpc-dependencies</artifactId>
+				<version>${spring-grpc.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -51,8 +72,14 @@
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.kafka</groupId>
-			<artifactId>spring-kafka</artifactId>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-kafka</artifactId>
+		</dependency>
+		<!-- Spring gRPC: here we use it as a CLIENT — GrpcChannelFactory builds the
+		     channel/stub that calls court-service. (Same starter serves client + server.) -->
+		<dependency>
+			<groupId>org.springframework.grpc</groupId>
+			<artifactId>spring-grpc-spring-boot-starter</artifactId>
 		</dependency>
 
 		<dependency>
@@ -92,6 +119,34 @@
 
 	<build>
 		<plugins>
+			<!-- Generates message classes + the gRPC client stub from the SAME shared
+			     contract court-service uses. This module only consumes the client stub. -->
+			<plugin>
+				<groupId>io.github.ascopes</groupId>
+				<artifactId>protobuf-maven-plugin</artifactId>
+				<version>${protobuf-maven-plugin.version}</version>
+				<configuration>
+					<protocVersion>${protoc.version}</protocVersion>
+					<sourceDirectories>
+						<sourceDirectory>${project.basedir}/../../shared/proto</sourceDirectory>
+					</sourceDirectories>
+					<binaryMavenPlugins>
+						<binaryMavenPlugin>
+							<groupId>io.grpc</groupId>
+							<artifactId>protoc-gen-grpc-java</artifactId>
+							<version>${grpc-java.version}</version>
+							<options>@generated=omit</options>
+						</binaryMavenPlugin>
+					</binaryMavenPlugins>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

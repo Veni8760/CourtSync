@@ -23,6 +23,11 @@ spring:
     baseline-on-migrate: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  # Spring gRPC server: runs on its OWN HTTP/2 port, alongside the REST server below.
+  # This is the synchronous court-lookup API other services (dropin-service) call.
+  grpc:
+    server:
+      port: ${COURT_GRPC_PORT:9090}
 
 server:
   port: ${SERVER_PORT:8082}
