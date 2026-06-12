@@ -1,0 +1,231 @@
+// CourtSync — Database Schema (DBML)
+// Paste into https://dbdiagram.io to render the ER diagram.
+//
+// Cross-service UUID columns are NOT real foreign keys.
+// Each microservice owns its own Postgres schema.
+// Cross-service references are noted in column comments.
+
+// ============================================================
+// SCHEMA: users  (user-service :8081)
+// ============================================================
+
+Table users [note: 'user-service :8081'] {
+  id           uuid         [pk]
+  email        varchar(255) [unique, not null]
+  first_name   varchar(100)
+  last_name    varchar(100)
+  skill_level  varchar(50)  [note: 'BEGINNER | INTERMEDIATE | ADVANCED | COMPETITIVE']
+  created_at   timestamp    [default: `CURRENT_TIMESTAMP`]
+  updated_at   timestamp    [default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================================
+// SCHEMA: communities  (community-service :8082)
+// ============================================================
+
+Table communities [note: 'community-service :8082'] {
+  id           uuid         [pk]
+  name         varchar(255) [not null]
+  description  text
+  visibility   varchar(50)  [not null, default: 'PUBLIC', note: 'PUBLIC | PRIVATE | INVITE_ONLY']
+  created_by   uuid         [not null, note: 'cross-service ref → users.id']
+  created_at   timestamp    [default: `CURRENT_TIMESTAMP`]
+  updated_at   timestamp    [default: `CURRENT_TIMESTAMP`]
+}
+
+Table community_members {
+  id           uuid        [pk]
+  community_id uuid        [not null, ref: > communities.id]
+  user_id      uuid        [not null, note: 'cross-service ref → users.id']
+  role         varchar(50) [not null, default: 'MEMBER', note: 'OWNER | ADMIN | ORGANIZER | MEMBER']
+  joined_at    timestamp   [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (community_id, user_id) [unique]
+  }
+}
+
+Table community_join_requests {
+  id           uuid        [pk]
+  community_id uuid        [not null, ref: > communities.id]
+  user_id      uuid        [not null, note: 'cross-service ref → users.id']
+  status       varchar(50) [not null, default: 'PENDING', note: 'PENDING | APPROVED | REJECTED']
+  created_at   timestamp   [default: `CURRENT_TIMESTAMP`]
+  updated_at   timestamp   [default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================================
+// SCHEMA: facilities  (facility-service :8083)
+// ============================================================
+
+Table facilities [note: 'facility-service :8083'] {
+  id         uuid          [pk]
+  name       varchar(255)  [not null]
+  address    varchar(255)
+  city       varchar(100)
+  province   varchar(100)
+  latitude   float
+  longitude  float
+  created_at timestamp     [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp     [default: `CURRENT_TIMESTAMP`]
+}
+
+Table facility_members {
+  id          uuid        [pk]
+  facility_id uuid        [not null, ref: > facilities.id]
+  user_id     uuid        [not null, note: 'cross-service ref → users.id']
+  role        varchar(50) [not null, default: 'STAFF']
+  created_at  timestamp   [default: `CURRENT_TIMESTAMP`]
+}
+
+Table spaces {
+  id          uuid         [pk]
+  facility_id uuid         [not null, ref: > facilities.id]
+  name        varchar(255) [not null]
+  sport       varchar(50)  [not null, default: 'VOLLEYBALL']
+  indoor      boolean      [not null, default: true]
+  capacity    integer      [not null]
+  created_at  timestamp    [default: `CURRENT_TIMESTAMP`]
+  updated_at  timestamp    [default: `CURRENT_TIMESTAMP`]
+}
+
+Table space_availability {
+  id          uuid    [pk]
+  space_id    uuid    [not null, ref: > spaces.id]
+  day_of_week integer [not null, note: '0=Sun … 6=Sat']
+  open_time   time    [not null]
+  close_time  time    [not null]
+}
+
+Table space_pricing {
+  id       uuid          [pk]
+  space_id uuid          [not null, ref: > spaces.id]
+  price    decimal(10,2) [not null]
+  currency varchar(10)   [not null, default: 'CAD']
+  unit     varchar(50)   [not null, default: 'PER_HOUR']
+}
+
+Table space_reservations {
+  id                  uuid          [pk]
+  space_id            uuid          [not null, ref: > spaces.id]
+  reserved_by_user_id uuid          [not null, note: 'cross-service ref → users.id']
+  reservation_type    varchar(50)   [not null, note: 'PRIVATE | DROPIN_BACKED']
+  dropin_id           uuid          [note: 'cross-service ref → drop_ins.id; null for PRIVATE']
+  start_time          timestamp     [not null]
+  end_time            timestamp     [not null]
+  status              varchar(50)   [not null, default: 'HELD', note: 'HELD | CONFIRMED | RELEASED | CANCELLED']
+  hold_expires_at     timestamp
+  price               decimal(10,2)
+  currency            varchar(10)   [default: 'CAD']
+  created_at          timestamp     [default: `CURRENT_TIMESTAMP`]
+  updated_at          timestamp     [default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================================
+// SCHEMA: dropins  (dropin-service :8084)
+// ============================================================
+
+Table drop_ins [note: 'dropin-service :8084'] {
+  id                   uuid          [pk]
+  organizer_user_id    uuid          [not null, note: 'cross-service ref → users.id']
+  community_id         uuid          [note: 'cross-service ref → communities.id; null = no community']
+  facility_id          uuid          [note: 'cross-service ref → facilities.id; null = custom location']
+  space_id             uuid          [note: 'cross-service ref → spaces.id']
+  space_reservation_id uuid          [note: 'cross-service ref → space_reservations.id']
+  location_name        varchar(255)  [note: 'used when facility_id is null']
+  location_address     varchar(255)
+  location_lat         float
+  location_lng         float
+  title                varchar(255)  [not null]
+  description          text
+  start_time           timestamp     [not null]
+  end_time             timestamp     [not null]
+  max_players          integer       [not null]
+  minimum_players      integer       [not null, default: 1]
+  confirm_by           timestamp     [note: 'threshold deadline; null = no threshold']
+  skill_level          varchar(50)
+  price                decimal(10,2) [default: 0]
+  visibility           varchar(50)   [not null, default: 'PUBLIC', note: 'PUBLIC | MEMBERS_ONLY | INVITE_ONLY']
+  status               varchar(50)   [not null, default: 'OPEN', note: 'OPEN | PENDING_CONFIRMATION | CONFIRMED | FULL | CANCELLED | COMPLETED']
+  confirmed_players    integer       [not null, default: 0, note: 'denormalised counter; maintained under row lock']
+  created_at           timestamp     [default: `CURRENT_TIMESTAMP`]
+  updated_at           timestamp     [default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================================
+// SCHEMA: bookings  (booking-service :8085)
+// ============================================================
+
+Table bookings [note: 'booking-service :8085'] {
+  id              uuid         [pk]
+  dropin_id       uuid         [not null, note: 'cross-service ref → drop_ins.id']
+  user_id         uuid         [not null, note: 'cross-service ref → users.id']
+  status          varchar(50)  [not null, default: 'CONFIRMED', note: 'PENDING | CONFIRMED | CANCELLED | WAITLISTED']
+  idempotency_key varchar(255) [unique]
+  created_at      timestamp    [default: `CURRENT_TIMESTAMP`]
+  updated_at      timestamp    [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (dropin_id, user_id) [unique]
+  }
+}
+
+Table waitlist_entries {
+  id         uuid      [pk]
+  dropin_id  uuid      [not null, note: 'cross-service ref → drop_ins.id']
+  user_id    uuid      [not null, note: 'cross-service ref → users.id']
+  position   integer   [not null]
+  created_at timestamp [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (dropin_id, user_id) [unique]
+  }
+}
+
+Table booking_status_history {
+  id         uuid        [pk]
+  booking_id uuid        [not null, ref: > bookings.id]
+  old_status varchar(50)
+  new_status varchar(50) [not null]
+  changed_at timestamp   [default: `CURRENT_TIMESTAMP`]
+  reason     text
+}
+
+// ============================================================
+// SCHEMA: notifications  (notification-service :8086)
+// ============================================================
+
+Table notifications [note: 'notification-service :8086'] {
+  id         uuid         [pk]
+  user_id    uuid         [not null, note: 'cross-service ref → users.id']
+  type       varchar(100) [not null]
+  payload    jsonb
+  status     varchar(50)  [not null, default: 'PENDING']
+  created_at timestamp    [default: `CURRENT_TIMESTAMP`]
+}
+
+Table notification_attempts {
+  id              uuid      [pk]
+  notification_id uuid      [not null, ref: > notifications.id]
+  attempted_at    timestamp [not null]
+  success         boolean   [not null]
+  error_message   text
+}
+
+// ============================================================
+// SCHEMA: payments  (payment-service :8087 — Phase 4)
+// ============================================================
+
+Table payments [note: 'payment-service :8087 — Phase 4'] {
+  id                         uuid          [pk]
+  user_id                    uuid          [not null, note: 'cross-service ref → users.id']
+  reference_id               uuid          [not null, note: 'booking_id or reservation_id (cross-service)']
+  reference_type             varchar(50)   [not null, note: 'BOOKING | RESERVATION']
+  amount                     decimal(10,2)
+  currency                   varchar(10)   [default: 'CAD']
+  status                     varchar(50)   [default: 'PENDING']
+  stripe_checkout_session_id varchar(255)
+  stripe_payment_intent_id   varchar(255)
+  created_at                 timestamp     [default: `CURRENT_TIMESTAMP`]
+  updated_at                 timestamp     [default: `CURRENT_TIMESTAMP`]
+}

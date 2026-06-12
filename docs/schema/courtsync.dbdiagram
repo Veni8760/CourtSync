@@ -1,0 +1,253 @@
+{
+  "version": "2.0.0",
+  "darkMode": true,
+  "gridEnabling": false,
+  "currentViewName": null,
+  "defaultView": {
+    "detailLevel": "All",
+    "tablePositions": [
+      {
+        "name": "users",
+        "schemaName": "public",
+        "x": 312,
+        "y": 16
+      },
+      {
+        "name": "communities",
+        "schemaName": "public",
+        "x": 1208,
+        "y": 480
+      },
+      {
+        "name": "community_members",
+        "schemaName": "public",
+        "x": 1696,
+        "y": 480
+      },
+      {
+        "name": "community_join_requests",
+        "schemaName": "public",
+        "x": 1696,
+        "y": 720
+      },
+      {
+        "name": "facilities",
+        "schemaName": "public",
+        "x": 16,
+        "y": 1368
+      },
+      {
+        "name": "facility_members",
+        "schemaName": "public",
+        "x": 472,
+        "y": 1368
+      },
+      {
+        "name": "spaces",
+        "schemaName": "public",
+        "x": 472,
+        "y": 1608
+      },
+      {
+        "name": "space_availability",
+        "schemaName": "public",
+        "x": 936,
+        "y": 1368
+      },
+      {
+        "name": "space_pricing",
+        "schemaName": "public",
+        "x": 936,
+        "y": 1608
+      },
+      {
+        "name": "space_reservations",
+        "schemaName": "public",
+        "x": 936,
+        "y": 1848
+      },
+      {
+        "name": "drop_ins",
+        "schemaName": "public",
+        "x": 848,
+        "y": 480
+      },
+      {
+        "name": "bookings",
+        "schemaName": "public",
+        "x": 16,
+        "y": 480
+      },
+      {
+        "name": "waitlist_entries",
+        "schemaName": "public",
+        "x": 16,
+        "y": 16
+      },
+      {
+        "name": "booking_status_history",
+        "schemaName": "public",
+        "x": 520,
+        "y": 480
+      },
+      {
+        "name": "notifications",
+        "schemaName": "public",
+        "x": 1024,
+        "y": 16
+      },
+      {
+        "name": "notification_attempts",
+        "schemaName": "public",
+        "x": 1496,
+        "y": 16
+      },
+      {
+        "name": "payments",
+        "schemaName": "public",
+        "x": 616,
+        "y": 16
+      }
+    ],
+    "tableGroupCollapseStates": [],
+    "stickyNoteLayouts": [],
+    "referencePaths": [
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "communities",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "community_id"
+        ],
+        "secondTableName": "community_members",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "communities",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "community_id"
+        ],
+        "secondTableName": "community_join_requests",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "facilities",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "facility_id"
+        ],
+        "secondTableName": "facility_members",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "facilities",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "facility_id"
+        ],
+        "secondTableName": "spaces",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "spaces",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "space_id"
+        ],
+        "secondTableName": "space_availability",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "spaces",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "space_id"
+        ],
+        "secondTableName": "space_pricing",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "spaces",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "space_id"
+        ],
+        "secondTableName": "space_reservations",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "bookings",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "booking_id"
+        ],
+        "secondTableName": "booking_status_history",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      },
+      {
+        "firstFieldNames": [
+          "id"
+        ],
+        "firstTableName": "notifications",
+        "firstSchemaName": "public",
+        "firstRelation": "1",
+        "secondFieldNames": [
+          "notification_id"
+        ],
+        "secondTableName": "notification_attempts",
+        "secondSchemaName": "public",
+        "secondRelation": "*",
+        "checkPoints": []
+      }
+    ]
+  },
+  "views": {}
+}

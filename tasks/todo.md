@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-10_
+_Last updated: 2026-06-11_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -50,7 +50,7 @@ Backend (court-service, port 8082) — schema via **Flyway** (chosen 2026-06-09)
 - [x] Frontend: courts list page (`/courts`) + create court form (`/courts/create`)
 - [x] Verified: api-gateway tests, frontend lint, frontend production build (2026-06-09)
 
-### Phase 2 — Drop-in service + RSVP + Kafka (MASTER steps 8–12)  ← IN PROGRESS
+### Phase 2 — Drop-in service + RSVP + Kafka (MASTER steps 8–12)  ← DONE (in PR #2)
 Decisions (2026-06-10): RSVP concurrency = **pessimistic row lock** (SELECT FOR UPDATE on
 drop_in) + `UNIQUE(drop_in_id,user_id)`; build the **whole vertical slice** this session.
 
@@ -103,14 +103,26 @@ in CLAUDE.md "Inter-service communication & contracts".
       new `CourtNotFoundException` (400); call wired into `DropInService.create`; named channel in yaml
 - [x] docker-compose: court publishes 9090; dropin gets `COURT_GRPC_ADDRESS=static://court-service:9090`
 - [x] Verified: both `./mvnw compile` BUILD SUCCESS, stubs generated in both, `docker compose config` OK
-- [ ] (Deferred to E2E) runtime round-trip: bogus court_id → 400, real seeded court → 201 + court logs GetCourt
+- [x] **Runtime round-trip verified live (2026-06-10):** bogus court_id → 400, real court → 201 + court logs `gRPC GetCourt served`. Required the Boot 4 migration below to even boot.
 - [ ] (Deferred, separate phase) migrate Kafka event payloads to Protobuf (touches Go + search + TS)
 
-Frontend (NEXT — not started; mind the recent-Next.js gotcha, check node_modules docs):
-- [ ] `lib/dropins.ts` data layer (list/get/create/rsvp) mirroring `lib/courts.ts`
-- [ ] `/drop-ins` list, `/drop-ins/[id]` detail + RSVP button, `/drop-ins/create`
-- [ ] Verify: compile, lint, prod build, end-to-end create→view→RSVP→Kafka→consumed in logs
-- [ ] (Deferred) runtime boot against hosted Supabase still unverified — do during E2E check
+Spring Boot 3.5 → 4.0 migration (DONE 2026-06-10, committed `55a3aad`) — forced because
+spring-grpc 1.0.x only runs on Boot 4.0.x (runtime `NoClassDefFoundError`, not a build error):
+- [x] All 7 Java service poms → `spring-boot-starter-parent` 4.0.2; api-gateway `spring-cloud` 2025.1.1 (SCG 5.0)
+- [x] Kafka: raw `spring-kafka` → `spring-boot-starter-kafka` (Boot 4 modular autoconfig)
+- [x] Jackson: dropin publisher + search consumer → Jackson 3 (`tools.jackson.*`, unchecked exceptions)
+- [x] Hibernate 7: `DropIn`/`DropInPlayer` created_at/updated_at marked `nullable=false` (strict validation)
+- [x] Docker: court/dropin build context → repo root so Dockerfile can COPY `shared/proto`
+- [x] Supabase from Docker: switched to IPv4 **Session Pooler** (`aws-1-us-west-2.pooler.supabase.com:5432`, user `postgres.<ref>`)
+
+Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn registry components):
+- [x] `lib/dropins.ts` data layer (list/get/create/rsvp/cancel) + `getCourt` in `lib/courts.ts`
+- [x] `lib/dev-identity.ts` — stable per-browser dev UUID (`useSyncExternalStore`), stands in for auth
+- [x] `/drop-ins` list, `/drop-ins/create` (server action + Zod), `/drop-ins/[id]` detail + RSVP/cancel (server actions, revalidatePath), loading + not-found
+- [x] Deleted abandoned VolleyIQ mock cruft (signup-form, session-card, signup/success routes)
+- [x] Verified: `pnpm lint` + `pnpm build` green; live route smoke tests pass
+- [x] Final holistic review: fixed site-header Host link `/drop-ins/new`→`/drop-ins/create`, cancel-RSVP 404 copy, loading copy
+- [x] Runtime boot against hosted Supabase verified (full stack up; see below)
 
 ### Phase 3 — Polish skeleton
 - [ ] User service CRUD, messaging/payment placeholders, error handling, validation, logging
@@ -120,24 +132,33 @@ Frontend (NEXT — not started; mind the recent-Next.js gotcha, check node_modul
 ---
 
 ## What we did this session
-- Created and worked on branch `feature/dropin-rsvp-kafka`.
-- Installed and authenticated the Supabase MCP server; installed Supabase Agent Skills locally and ignored those local skill files.
-- Set the app architecture to use one hosted Supabase Postgres database with one schema per DB-backed service.
-- Created/verified hosted Supabase service schemas: `users`, `courts`, `dropins`, `messages`, `payments`.
-- Created and seeded `courts.courts` in hosted Supabase with 5 development courts.
-- Rerouted DB-backed Spring services in Docker Compose to hosted Supabase using `SUPABASE_JDBC_BASE_URL`, `SUPABASE_DB_USER`, and `SUPABASE_DB_PASSWORD`.
-- Added `baseline-on-migrate: true` for `court-service` so Flyway can adopt the already-seeded hosted `courts` schema.
-- Added `scripts/supabase-psql.sh` so development `psql` access is a short command instead of a full connection string.
-- Updated `README.md`, `MASTER.md`, `CLAUDE.md`, `.env.example`, and this handoff for hosted Supabase.
-- Committed the hosted Supabase routing/helper work as `7a366b6 Route services to hosted Supabase`.
+- Built the **Phase 2 drop-in frontend vertical** via subagent-driven-development (8 tasks + two-stage review each), all UI from shadcn registry components (no hand-written primitives). Locked decisions: real-but-simpler pages (replacing the abandoned VolleyIQ mock) + stable per-browser dev identity.
+- Files: `lib/dropins.ts`, `getCourt` in `lib/courts.ts`, `lib/dev-identity.ts` (`useSyncExternalStore`), components (drop-in card, create form, rsvp panel, dev-player badge), routes (list, create, detail, loading, not-found) with server actions for create/rsvp/cancel. Deleted mock signup/checkout cruft.
+- Final holistic review caught + fixed a blocker (site-header "Host" linked to deleted `/drop-ins/new` → `/drop-ins/create`) plus 2 minor copy fixes. `pnpm lint` + `pnpm build` green; live smoke tests pass.
+- **Opened PR #2** (`feature/dropin-rsvp-kafka` → `main`): https://github.com/Veni8760/CourtSync/pull/2 — bundles dropin+RSVP (gRPC+Kafka), the Boot 4 migration, and the frontend. 14 commits, 97 files.
+- Stripped the `Co-Authored-By: Claude` trailer from 6 older commits (`filter-branch` + `--force-with-lease`, `c8d4a22`→`fd44d61`) and removed the attribution footer from the PR. Recorded the no-attribution rule in memory + global `~/.claude/CLAUDE.md`.
 
 ## What's unfinished / open questions
+- **PR #2 is open and unmerged** — review/merge it (or keep iterating on the branch) before starting Phase 3.
+- The Docker `frontend` container is built from old code — `docker compose up -d --build frontend` to make the *stack* serve the new drop-in UI (the code itself is committed + verified).
 - Kafka image choice — using apache/kafka KRaft single-broker (no Zookeeper)
 - Hosted Supabase DB password must be set in local `.env` as `SUPABASE_DB_PASSWORD`
-- Runtime boot against hosted Supabase still needs verification. Static checks passed (`docker compose config --quiet`, `git diff --check`), but Docker startup was interrupted before containers were allowed to run.
-- If the direct Supabase DB endpoint fails from local Docker because of IPv6/network support, switch `SUPABASE_JDBC_BASE_URL` to the Supabase Session Pooler URL and set `SUPABASE_DB_USER` to the pooler username (`postgres.<project-ref>`).
-- `courts.courts` currently has RLS disabled. This is acceptable for backend-only JDBC service access during the skeleton, but must be revisited before exposing tables through Supabase Data API or client-side Supabase access.
+- Benign log noise: dropin warns "Spring Data Redis could not identify store assignment" for the JPA repos (Redis repo-scanning); harmless, silence later by scoping Redis repositories.
+- `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
 
 ## What's next (one finishable chunk)
-- First verify the hosted Supabase court slice at runtime: `docker compose up --build kafka court-service api-gateway frontend`, then check `GET /health`, `GET /api/courts`, and `http://localhost:3000/courts`.
-- After that passes, start Phase 2: implement drop-in tables/entity/repo/service/controller, then RSVP and Kafka events.
+**Phase 3 — user-service vertical.** Scope: give `user-service` (port 8081) a real CRUD slice
+mirroring the court/dropin pattern (Flyway schema → entity/repo/DTO/service/controller, gateway
+route). **Done when** `POST /api/users` creates a user and `GET /api/users/{id}` returns it
+through the gateway against the running stack.
+- [ ] `V1__create_users.sql` Flyway migration (schema `users`) + `ddl-auto: validate`
+- [ ] `User` entity + `UserRepository` + DTOs (CreateUserRequest validated, UserResponse)
+- [ ] `UserService` + `UserNotFoundException` (404) + `UserController` (POST/GET/GET)
+- [ ] api-gateway route `/api/users/**` → user-service (StripPrefix=1)
+- [ ] Verify: `./mvnw compile`, then curl create+get through the gateway
+
+Out of scope (parked):
+- Merge/iterate PR #2 (separate from the build work above)
+- Phase 2 deferred: migrate Kafka event payloads from JSON to Protobuf (touches Go + search + TS)
+- Phase 3 rest: messaging/payment placeholders, cross-cutting error handling
+- Later: auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics
