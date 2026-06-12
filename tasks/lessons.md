@@ -3,6 +3,10 @@
 
 Patterns and corrections captured across sessions. Append new entries with a date and a one-line "what went wrong / what to do instead."
 
+## 2026-06-12
+
+- **Boot 4 modular autoconfig strikes again: Flyway needs `spring-boot-starter-flyway`.** Raw `flyway-core` no longer triggers autoconfiguration — and the failure is *silent*: services whose tables already exist boot fine with migrations never running (court/dropin ran like this since the 3.5→4.0 migration). Only a fresh schema (user-service) exposed it via Hibernate `validate` failing on a missing table. Rule: on Boot 4, every infra integration (Kafka, Flyway, …) gets its `spring-boot-starter-*`; after any such change, check the boot log for the subsystem's banner (e.g. `FlywayExecutor`) — absence of log lines is the bug.
+
 ## 2026-06-10
 
 - **A green `mvn package` does NOT prove framework compatibility — run the app.** spring-grpc 1.0.3 compiled fine on Boot 3.5.14 but crashed at *runtime* (`NoClassDefFoundError: PropertyMapper$Source$Adapter`, gRPC `Duration.toNanos()` NPE) because the whole 1.0.x line targets Boot 4.0.x. Pin library↔Boot pairs from the library's own release attributes (spring-grpc git tag `attributes-variables.adoc` → `spring-boot-version`), and always boot the service, not just build it.
