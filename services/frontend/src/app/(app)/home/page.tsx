@@ -1,15 +1,13 @@
+import type { Metadata } from "next"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import {
   Calendar03Icon,
-  ChampionIcon,
   Location01Icon,
-  TaskDone01Icon,
-  UserGroupIcon,
-  VolleyballIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { SiteHeader } from "@/components/layout/site-header"
+import { HeroSection } from "@/components/home/hero-section"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -21,7 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { cn } from "@/lib/utils"
+import { getCurrentUser } from "@/lib/auth"
 import {
   getAllDropInSessions,
   getCommunities,
@@ -29,6 +27,12 @@ import {
   type DropInSession,
   type GlobalLeaderboardEntry,
 } from "@/lib/mock-data"
+import { cn } from "@/lib/utils"
+
+export const metadata: Metadata = {
+  title: "Home | VolleyIQ",
+  description: "Manage your VolleyIQ drop-ins, communities, and players.",
+}
 
 const dateFormatter = new Intl.DateTimeFormat("en-CA", {
   weekday: "short",
@@ -41,7 +45,13 @@ const timeFormatter = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
 })
 
-export default function Home() {
+export default async function HomePage() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
   const sessions = getAllDropInSessions()
     .sort(
       (sessionA, sessionB) =>
@@ -55,69 +65,21 @@ export default function Home() {
   const totalPlayers = getGlobalLeaderboard().length
 
   return (
-    <>
-      <SiteHeader />
-      <main className="min-h-screen bg-muted/30">
-        <section className="border-b bg-background">
-          <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
-            <div className="flex max-w-4xl flex-col gap-5">
-              <Badge variant="outline" className="self-start">
-                Pickup intelligence for volleyball
-              </Badge>
-              <div className="flex flex-col gap-4">
-                <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                  Run better volleyball drop-ins.
-                </h1>
-                <p className="max-w-2xl text-sm/relaxed text-muted-foreground sm:text-base/relaxed">
-                  VolleyIQ connects local communities, pickup hosts, and players
-                  with signup flows, generated teams, game schedules, and ELO
-                  profiles.
-                </p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Link href="/explore" className={cn(buttonVariants({ size: "lg" }))}>
-                  <HugeiconsIcon icon={VolleyballIcon} data-icon="inline-start" />
-                  Explore games
-                </Link>
-                <Link
-                  href="/leaderboard"
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
-                >
-                  <HugeiconsIcon icon={ChampionIcon} data-icon="inline-start" />
-                  View leaderboard
-                </Link>
-              </div>
-            </div>
+    <main className="min-h-screen bg-muted/30">
+      <HeroSection
+        sessionsCount={sessions.length}
+        openSessionsCount={openSessions.length}
+        totalPlayers={totalPlayers}
+      />
 
-            <div className="grid gap-3 md:grid-cols-3">
-              <HeroMetric
-                icon={VolleyballIcon}
-                label="Upcoming sessions"
-                value={sessions.length.toLocaleString()}
-              />
-              <HeroMetric
-                icon={TaskDone01Icon}
-                label="Open sessions"
-                value={openSessions.length.toLocaleString()}
-              />
-              <HeroMetric
-                icon={UserGroupIcon}
-                label="Tracked players"
-                value={totalPlayers.toLocaleString()}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
-          <UpcomingSessionsCard sessions={sessions} />
-          <div className="flex flex-col gap-5">
-            <CommunitiesCard count={communities.length} />
-            <LeaderboardCard entries={leaderboard} />
-          </div>
-        </section>
-      </main>
-    </>
+      <section className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[1.2fr_0.8fr] lg:px-8">
+        <UpcomingSessionsCard sessions={sessions} />
+        <div className="flex flex-col gap-5">
+          <CommunitiesCard count={communities.length} />
+          <LeaderboardCard entries={leaderboard} />
+        </div>
+      </section>
+    </main>
   )
 }
 
@@ -254,27 +216,5 @@ function LeaderboardCard({ entries }: { entries: GlobalLeaderboardEntry[] }) {
         </div>
       </CardContent>
     </Card>
-  )
-}
-
-function HeroMetric({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentProps<typeof HugeiconsIcon>["icon"]
-  label: string
-  value: string
-}) {
-  return (
-    <div className="flex min-w-0 items-center gap-3 rounded-lg border bg-card p-4">
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-        <HugeiconsIcon icon={icon} className="text-muted-foreground" />
-      </span>
-      <div className="min-w-0">
-        <div className="font-heading text-xl font-semibold">{value}</div>
-        <div className="text-xs/relaxed text-muted-foreground">{label}</div>
-      </div>
-    </div>
   )
 }

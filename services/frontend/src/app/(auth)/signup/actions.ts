@@ -58,7 +58,7 @@ export async function signup(
   }
 
   revalidatePath("/", "layout")
-  redirect("/drop-ins")
+  redirect("/home")
 }
 
 function splitFullName(fullName: string) {

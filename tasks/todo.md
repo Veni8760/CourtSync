@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-12_
+_Last updated: 2026-06-13_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -146,7 +146,35 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 
 ---
 
-## What we did this session (2026-06-12)
+## What we did this session (2026-06-12 to 2026-06-13)
+- **Done: frontend hero Motion polish** — added a narrow client component for the home
+  hero, preserve the current visual layout, animate only the intro copy/CTA and metrics row,
+  respect reduced motion, then verified with frontend lint/build and visual checks.
+- **Done: signed-out landing behavior** — made the shared header auth-aware so signed-out
+  users see `Sign in` instead of `Host`, added a Supabase sign-out action that clears the
+  session and redirects to `/`, and made `/` render only the hero landing for signed-out
+  visitors while signed-in users keep the full home content.
+- **In progress: real landing page + clean app routing** — split `/` into a true public
+  marketing route and moved the signed-in dashboard to `/home`:
+  - Added `src/app/(marketing)/page.tsx`; signed-in users redirect from `/` to `/home`.
+  - Added `src/app/(app)/home/page.tsx`; signed-out users redirect from `/home` to `/login`.
+  - Deleted the conflicting `src/app/page.tsx` root page.
+  - Added `src/lib/auth.ts` shared server auth helper and updated the app header to link brand
+    to `/home` when signed in, `/` when signed out.
+  - Added marketing components under `src/components/marketing/` plus
+    `src/components/layout/marketing-header.tsx`.
+  - Updated login, signup, and auth-confirm success redirects to `/home`; sign-out remains `/`.
+- **Verification so far for landing/routing slice:**
+  - `pnpm lint` passed before final mobile/reduced-motion tweaks.
+  - `pnpm build` passed before final mobile/reduced-motion tweaks; Next route output included
+    both dynamic `/` and `/home` with no route conflict.
+  - Browser smoke checked signed-out `/` rendering the marketing page first, primary CTA
+    navigating to `/explore`, and signed-out `/home` redirecting to `/login`.
+  - Desktop and mobile visual checks were performed; mobile preview was compacted so the next
+    section is visible in the first viewport.
+  - Follow-up still needed: rerun `pnpm lint` + `pnpm build` after final tweaks, finish reduced
+    motion QA, and verify signed-in `/` → `/home` plus sign-out → `/` with a real authenticated
+    Supabase session.
 - **Normalized the DBML schema** (`docs/schema/courtsync.dbml`): 3NF pass with documented
   intentional denormalizations, CHECKs for every invariant, partial uniques (re-book after
   cancel, one live reservation/payment per ref), deferrable waitlist position unique,
@@ -179,6 +207,11 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
 
 ## What's next (one finishable chunk)
+First finish the active **real landing page + clean app routing** slice:
+rerun `pnpm lint` and `pnpm build` after the final mobile/reduced-motion tweaks, finish reduced
+motion QA, then verify signed-in `/` → `/home`, signed-in `/home`, and sign-out → `/` with a
+real Supabase session.
+
 **Open a PR for `feature/global-exception-handler` and merge it** (PR #3 for the user vertical
 is already merged), then the last Phase 3 slice: **messaging + payment placeholder services** —
 each gets its Flyway V1 (per the hardened DBML), an empty feature package skeleton, and stays
