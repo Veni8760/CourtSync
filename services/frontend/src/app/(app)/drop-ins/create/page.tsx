@@ -29,11 +29,11 @@ export default async function CreateDropInPage() {
       <section className="border-b bg-background">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8">
           <Link
-            href="/drop-ins"
+            href="/find"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-fit")}
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} data-icon="inline-start" />
-            Back to drop-ins
+            Back to map
           </Link>
           <h1 className="font-heading text-3xl font-semibold text-foreground">
             Create drop-in

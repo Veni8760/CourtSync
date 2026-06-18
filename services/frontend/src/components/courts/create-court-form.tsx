@@ -1,12 +1,26 @@
 "use client"
 
-import { useActionState } from "react"
+import { useActionState, useState } from "react"
+import dynamic from "next/dynamic"
 import {
   Add01Icon,
   Location01Icon,
   VolleyballIcon,
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
+
+// Leaflet is client-only (Next 16: ssr:false must live in a Client Component).
+const LocationPicker = dynamic(
+  () => import("@/components/map/location-picker").then((m) => m.LocationPicker),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full animate-pulse bg-muted" aria-hidden />,
+  }
+)
+
+// Default the picker over downtown Toronto until the host moves the pin.
+const DEFAULT_LAT = 43.6532
+const DEFAULT_LNG = -79.3832
 
 import {
   createCourtAction,
@@ -49,6 +63,14 @@ export function CreateCourtForm() {
     createCourtAction,
     initialCreateCourtFormState
   )
+  // Controlled so the map and the number inputs stay in sync (either can set them).
+  const [latitude, setLatitude] = useState("")
+  const [longitude, setLongitude] = useState("")
+
+  function setPoint(lat: number, lng: number) {
+    setLatitude(lat.toFixed(6))
+    setLongitude(lng.toFixed(6))
+  }
 
   return (
     <Card className="bg-background/80 shadow-sm">
@@ -162,6 +184,19 @@ export function CreateCourtForm() {
           </FieldGroup>
 
           <FieldGroup>
+            <FieldLabel>Location on map</FieldLabel>
+            <div className="h-56 overflow-hidden rounded-lg border">
+              <LocationPicker
+                latitude={latitude === "" ? DEFAULT_LAT : Number(latitude)}
+                longitude={longitude === "" ? DEFAULT_LNG : Number(longitude)}
+                radiusKm={1}
+                onChange={setPoint}
+              />
+            </div>
+            <FieldDescription>
+              Click the map (or drag the pin) to place the court. This is what makes
+              it show up in nearby search.
+            </FieldDescription>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field data-invalid={!!state.fieldErrors.latitude}>
                 <FieldLabel htmlFor="latitude">Latitude</FieldLabel>
@@ -171,6 +206,8 @@ export function CreateCourtForm() {
                   type="number"
                   step="any"
                   placeholder="43.6532"
+                  value={latitude}
+                  onChange={(event) => setLatitude(event.target.value)}
                   aria-invalid={!!state.fieldErrors.latitude}
                   disabled={isPending}
                 />
@@ -185,15 +222,14 @@ export function CreateCourtForm() {
                   type="number"
                   step="any"
                   placeholder="-79.3832"
+                  value={longitude}
+                  onChange={(event) => setLongitude(event.target.value)}
                   aria-invalid={!!state.fieldErrors.longitude}
                   disabled={isPending}
                 />
                 <FieldError errors={toFieldErrors(state.fieldErrors.longitude)} />
               </Field>
             </div>
-            <FieldDescription>
-              Coordinates are optional for now but will support nearby court search.
-            </FieldDescription>
           </FieldGroup>
 
           {state.formError ? (

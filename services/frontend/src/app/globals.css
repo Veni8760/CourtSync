@@ -35,6 +35,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-rally: var(--rally);
+  --color-rally-foreground: var(--rally-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -46,24 +48,28 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Court & ball palette: Mikasa cobalt + rally yellow + sand on court-line ink. */
+  --background: #fcfcfd;
+  --foreground: #16223a;
+  --card: #ffffff;
+  --card-foreground: #16223a;
+  --popover: #ffffff;
+  --popover-foreground: #16223a;
+  --primary: #2b5fe3;
+  --primary-foreground: #ffffff;
+  --secondary: #f4efe6; /* warm sand surface */
+  --secondary-foreground: #16223a;
+  --muted: #f1f3f7;
+  --muted-foreground: #5b6577;
+  --accent: #eef1f6; /* subtle hover bg (NOT the brand accent) */
+  --accent-foreground: #16223a;
+  /* The deliberate energy accent — radius circle, active pin, RSVP confirm. */
+  --rally: #f5c518;
+  --rally-foreground: #16223a;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #e3e6ec;
+  --input: #e3e6ec;
+  --ring: #2b5fe3;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);

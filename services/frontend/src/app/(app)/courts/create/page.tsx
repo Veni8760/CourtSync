@@ -33,11 +33,11 @@ export default async function CreateCourtPage() {
       <section className="border-b bg-background">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-8 sm:px-6 lg:px-8">
           <Link
-            href="/courts"
+            href="/drop-ins/create"
             className={cn(buttonVariants({ variant: "ghost" }), "self-start")}
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} data-icon="inline-start" />
-            Courts
+            Back
           </Link>
           <div className="flex max-w-3xl flex-col gap-4">
             <div className="flex items-center gap-3">

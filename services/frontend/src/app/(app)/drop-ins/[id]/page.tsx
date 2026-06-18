@@ -61,11 +61,11 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
       <section className="border-b bg-background">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-4 px-4 py-8 sm:px-6 lg:px-8">
           <Link
-            href="/drop-ins"
+            href="/find"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-fit")}
           >
             <HugeiconsIcon icon={ArrowLeft01Icon} data-icon="inline-start" />
-            Back to drop-ins
+            Back to map
           </Link>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={dropIn.status === "OPEN" ? "default" : "secondary"}>
@@ -130,7 +130,7 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
           <CardHeader>
             <CardTitle>Your RSVP</CardTitle>
             <CardDescription>
-              RSVP as your dev player, or cancel a previous RSVP.
+              Claim a spot, or cancel a previous RSVP.
             </CardDescription>
           </CardHeader>
           <CardContent>
