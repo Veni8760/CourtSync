@@ -8,8 +8,8 @@ export default function DropInNotFound() {
       badge="Drop-in not found"
       title="Drop-in unavailable"
       description="This drop-in doesn't exist or has been removed."
-      href="/drop-ins"
-      cta="Back to drop-ins"
+      href="/find"
+      cta="Back to map"
       icon={VolleyballIcon}
     />
   )

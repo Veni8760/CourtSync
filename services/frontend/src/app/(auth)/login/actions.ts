@@ -40,7 +40,7 @@ export async function login(
   }
 
   revalidatePath("/", "layout")
-  redirect("/home")
+  redirect("/find")
 }
 
 function getString(formData: FormData, key: string) {

@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-18 (evening — Phase 5 filters merged)_
+_Last updated: 2026-06-18 (evening — map-first UI redesign merged)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -222,8 +222,24 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   `@Cacheable` key extended with the filter values. Frontend near-me page gained a skill dropdown +
   max-price input that re-query on change (date-window wired through the API, no picker UI yet).
   Unit test asserts each filter narrows; search-service tests + frontend build green.
+- **Map-first UI redesign (merged, PR #17):** ripped out the dead mock scaffolding
+  (`/home`, `/explore`, `/communities`, `/leaderboard`, `/players`, marketing landing, the
+  39KB `mock-data.ts`) and rebuilt the frontend around the only real features: browse + find +
+  RSVP. New `/find` home is a **split map + synced list** (Leaflet + OpenStreetMap, no API key),
+  with a Facebook-style **Change location** modal (Nominatim city/ZIP search + radius select +
+  draggable pin + radius circle → feeds the existing `searchNearbyDropIns`, zero backend change).
+  New design system: Mikasa cobalt + rally-yellow + sand on court-ink, Archivo display / Inter /
+  Geist Mono. Court-create now sets lat/lng by clicking the picker map. Deps added: `leaflet`,
+  `react-leaflet`; new `components/ui/dialog.tsx` (Base UI). Login/signup/confirm redirects
+  repointed `/home`→`/find`; `/drop-ins` list → redirect to `/find`. **Verified live via
+  Playwright:** login→/find, geocode "Mississauga"→recenter→Apply→distance recomputed to 22.2 km,
+  skill filter→empty state, court-create map renders. `pnpm build` + `pnpm lint` green.
 
 ## What's unfinished / open questions
+- [ ] Redesign polish not yet exercised live: card↔pin hover-sync color, "Use my location"
+  (needs a real geolocation grant), create-drop-in happy path on the new tokens. Low risk (build
+  passed); spot-check in the browser.
+- [ ] Date-window filter still has no picker UI (the search API already accepts `from`/`to`).
 - [ ] **Live end-to-end test not done by Daniel yet:** sign in (keeping email confirmation ON —
   decided), confirm via email, then court → drop-in → RSVP → watch Kafka
   (`docker compose logs -f notification-service` for `RSVP_CREATED`).
