@@ -9,13 +9,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,16 +33,6 @@ public class UserController {
             @AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody UpdateUserProfileRequest request) {
         return service.upsertCurrentUser(currentUserId(jwt), currentEmail(jwt), request);
-    }
-
-    @GetMapping
-    public List<UserResponse> list() {
-        return service.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public UserResponse get(@PathVariable UUID id) {
-        return service.findById(id);
     }
 
     private UUID currentUserId(Jwt jwt) {

@@ -1,4 +1,4 @@
-import { getAccessToken } from "@/lib/auth"
+import { apiBaseUrl, authHeaders } from "@/lib/api"
 import {
   netHeightOptions,
   surfaceOptions,
@@ -86,25 +86,7 @@ export function formatNetHeight(netHeight: NetHeight) {
 }
 
 function courtApiUrl(path: string) {
-  return `${getApiBaseUrl()}${path}`
-}
-
-// Attaches the Supabase JWT (when signed in) so court-service accepts the request.
-async function authHeaders(extra?: Record<string, string>) {
-  const token = await getAccessToken()
-  return {
-    ...extra,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
-}
-
-function getApiBaseUrl() {
-  const baseUrl =
-    process.env.COURTSYNC_API_BASE_URL ??
-    process.env.NEXT_PUBLIC_API_BASE_URL ??
-    "http://localhost:8080/api"
-
-  return baseUrl.replace(/\/+$/, "")
+  return `${apiBaseUrl()}${path}`
 }
 
 async function readCourtApiResponse<T>(response: Response) {

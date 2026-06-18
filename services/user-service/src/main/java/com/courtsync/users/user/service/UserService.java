@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -43,11 +42,6 @@ public class UserService {
         User saved = repository.save(user);
         log.info("User profile upserted: id={} email={}", saved.getId(), saved.getEmail());
         return UserResponse.from(saved);
-    }
-
-    @Transactional(readOnly = true)
-    public List<UserResponse> findAll() {
-        return repository.findAll().stream().map(UserResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
