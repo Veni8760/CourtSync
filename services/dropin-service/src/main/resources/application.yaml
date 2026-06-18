@@ -26,6 +26,11 @@ spring:
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       # Wait for the broker leader to ack the write before treating send as done.
       acks: all
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SUPABASE_AUTH_ISSUER:https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
   # gRPC CLIENT config. "court-service" is the named channel CourtGrpcClientConfig
   # resolves via GrpcChannelFactory.createChannel("court-service").
   grpc:
