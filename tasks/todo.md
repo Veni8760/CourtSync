@@ -195,7 +195,16 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   (`@Document`, `geo_point` location) via Spring Data Elasticsearch. ES client pinned to **9.2.3**
   (the version Boot 4.0.2 manages) in docker-compose + a `search-service` container. Consumer unit
   test green (`mvnw test`). Standard layout: `common/HealthController`, `dropin/{document,repository,consumer}`.
-- **Search Phase 3 — geo query endpoint (this session, NOT yet merged):** `GET /search/drop-ins?lat&lng&radiusKm`
+- **Runtime verification + gRPC bug fix (merged, PR #13):** brought the full stack up against
+  hosted Supabase + local ES/Kafka and ran the search vertical **live, signed-in**: mint Supabase
+  JWT → `POST /api/courts` (Toronto, real coords) → `POST /api/drop-ins` → search-service indexes
+  it into ES → `GET /api/search/drop-ins` returns it nearest-first (`city=Toronto`, dist 0.0km).
+  **Found + fixed a real bug:** drop-in creation had been broken since the auth phase — spring-grpc
+  auto-secured court-service's gRPC port when it became a resource server, so the internal
+  dropin→court call failed `UNAUTHENTICATED`. Fixed via `spring.autoconfigure.exclude` of the gRPC
+  security autoconfigs (gRPC port is internal/trusted; REST stays protected). Documented in CLAUDE.md.
+  Also: frontend host port is now `${FRONTEND_PORT:-3000}` (Daniel runs another app on 3000).
+- **Search Phase 3 — geo query endpoint (merged, PR #12):** `GET /search/drop-ins?lat&lng&radiusKm`
   on search-service. ES does the radius filter (`findByLocationNear` → geo_distance); the service sorts
   nearest-first in-app (haversine) and returns a `DropInSearchResult` DTO with each `distanceKm`. Gateway
   routes `/api/search/**` → `search-service:8087`. search-service is now a JWT resource server too
@@ -233,9 +242,8 @@ and calls `/api/search/drop-ins`, plus a Redis cache in search-service for the g
 and nearby drop-ins render nearest-first; a repeated identical query is served from Redis (log
 or TTL key visible), not a fresh ES hit.
 
-- [ ] **First, prove Phases 2–3 at runtime** (not yet done): `docker compose up -d --build` the new
-      bits; create a drop-in at a court WITH coordinates; `curl` the gateway
-      `/api/search/drop-ins?lat=&lng=&radiusKm=` with a Bearer token → returns it nearest-first
+- [x] **Prove Phases 2–3 at runtime** — DONE this session: signed-in court→drop-in→ES→
+      `GET /api/search/drop-ins` returns nearest-first. Fixed the gRPC-auth bug found along the way (PR #13).
 - [ ] search-service: `lib`-side fetch in `services/frontend/src/lib/search.ts` (REST, Bearer, via gateway)
 - [ ] frontend page (e.g. `/drop-ins/near-me` or a tab): `navigator.geolocation` → query → render cards
 - [ ] search-service: Redis cache on `findNearby` (`spring-boot-starter-data-redis` + `@Cacheable`,
