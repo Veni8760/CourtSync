@@ -195,6 +195,11 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   (`@Document`, `geo_point` location) via Spring Data Elasticsearch. ES client pinned to **9.2.3**
   (the version Boot 4.0.2 manages) in docker-compose + a `search-service` container. Consumer unit
   test green (`mvnw test`). Standard layout: `common/HealthController`, `dropin/{document,repository,consumer}`.
+- **Search Phase 3 — geo query endpoint (this session, NOT yet merged):** `GET /search/drop-ins?lat&lng&radiusKm`
+  on search-service. ES does the radius filter (`findByLocationNear` → geo_distance); the service sorts
+  nearest-first in-app (haversine) and returns a `DropInSearchResult` DTO with each `distanceKm`. Gateway
+  routes `/api/search/**` → `search-service:8087`. search-service is now a JWT resource server too
+  (`SecurityConfig` + issuer-uri, same per-service pattern). Service unit test green (nearest-first + distance).
 
 ## What's unfinished / open questions
 - [ ] **Live end-to-end test not done by Daniel yet:** sign in (keeping email confirmation ON —
@@ -219,30 +224,27 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## What's next (one finishable chunk) — Search Phase 3: the geo query endpoint
-Search Phase 2 stands up the read model (events → ES). Phase 3 makes it queryable: a REST
-endpoint on search-service that runs an Elasticsearch `geo_distance` query, exposed to the
-browser through the gateway. This is the first time search returns results.
+## What's next (one finishable chunk) — Search Phase 4: frontend "near me" + Redis cache
+The backend search vertical (Phases 1–3) is code-complete. Phase 4 makes it visible and makes
+the resume's "Redis" claim true: a frontend page that asks the browser for the user's location
+and calls `/api/search/drop-ins`, plus a Redis cache in search-service for the geo response.
 
-**Done when** `GET /api/search/drop-ins?lat=43.65&lng=-79.38&radiusKm=10` (through the gateway)
-returns the drop-ins whose `location` is within the radius, nearest first — verified against a
-couple of seeded drop-ins at known coordinates.
+**Done when** a signed-in user opens the "near me" page, the browser geolocation prompt fires,
+and nearby drop-ins render nearest-first; a repeated identical query is served from Redis (log
+or TTL key visible), not a fresh ES hit.
 
-- [ ] First, **prove Phase 2 at runtime**: `docker compose up -d --build elasticsearch search-service`,
-      create a drop-in (at a court WITH coordinates), confirm a doc lands in ES
-      (`curl localhost:9200/drop-ins/_search`) and search-service logs "Indexed drop-in …"
-- [ ] `DropInSearchRepository`: derived geo query (`findByLocationNear(GeoPoint, Distance)`) or a
-      `@Query`/`NativeQuery` `geo_distance`
-- [ ] `dropin/controller/SearchController`: `GET /search/drop-ins?lat&lng&radiusKm` → query → DTO list
-- [ ] api-gateway: route `/api/search/**` → `search-service:8087` (add `SEARCH_SERVICE_URL` env)
-- [ ] search-service security: add `spring-boot-starter-oauth2-resource-server` + `SecurityConfig`
-      (same per-service Supabase JWT pattern; `/health`+actuator public) — search is authenticated like the rest
-- [ ] test: index two docs, query a tight radius, assert only the near one returns
+- [ ] **First, prove Phases 2–3 at runtime** (not yet done): `docker compose up -d --build` the new
+      bits; create a drop-in at a court WITH coordinates; `curl` the gateway
+      `/api/search/drop-ins?lat=&lng=&radiusKm=` with a Bearer token → returns it nearest-first
+- [ ] search-service: `lib`-side fetch in `services/frontend/src/lib/search.ts` (REST, Bearer, via gateway)
+- [ ] frontend page (e.g. `/drop-ins/near-me` or a tab): `navigator.geolocation` → query → render cards
+- [ ] search-service: Redis cache on `findNearby` (`spring-boot-starter-data-redis` + `@Cacheable`,
+      key = rounded lat/lng/radius, short TTL) — gives search-service its Redis job
+- [ ] decide: does the result need title/price? if yes, fatten `DROP_IN_CREATED` + `DropInDocument` first
 
-Out of scope (parked) — later phases of the search vertical, in order:
-- Search Phase 4: frontend "near me" (browser geolocation) + Redis caches the geo-search response
+Out of scope (parked):
 - Search Phase 5: layer the easy filters (skill / maxPrice / date / status) onto the search query
-- Note: `DROP_IN_CREATED` doesn't carry title/price/skill yet — fatten the event (+ `DropInDocument`) when the search UI needs to render them (Phase 4/5)
+- `DROP_IN_CREATED` doesn't carry title/price/skill yet — fatten the event (+ `DropInDocument`) when the UI needs to render them
 Other parked items:
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
 - MASTER.md §8.6/§10.3 row-lock booking language contradicts the decided ReserveSlot/ReleaseSlot gRPC design — reconcile in a MASTER edit
