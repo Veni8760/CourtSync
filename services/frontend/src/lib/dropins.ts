@@ -1,12 +1,7 @@
+import { getAccessToken } from "@/lib/auth"
+
 export const dropInStatusValues = ["OPEN", "FULL", "CANCELLED"] as const
 export type DropInStatus = (typeof dropInStatusValues)[number]
-
-export const skillLevelOptions = [
-  { value: "Beginner", label: "Beginner" },
-  { value: "Intermediate", label: "Intermediate" },
-  { value: "Advanced", label: "Advanced" },
-  { value: "Open", label: "Open" },
-] as const
 
 export type DropIn = {
   id: string
@@ -28,7 +23,6 @@ export type DropIn = {
 
 export type CreateDropInInput = {
   courtId: string
-  organizerUserId: string
   title: string
   description?: string
   startTime: string
@@ -49,12 +43,16 @@ export class DropInApiError extends Error {
 }
 
 export async function listDropIns() {
-  const response = await fetch(dropInApiUrl("/drop-ins"), { cache: "no-store" })
+  const response = await fetch(dropInApiUrl("/drop-ins"), {
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
   return readDropInApiResponse<DropIn[]>(response)
 }
 
 export async function getDropIn(id: string) {
   const response = await fetch(dropInApiUrl(`/drop-ins/${id}`), {
+    headers: await authHeaders(),
     cache: "no-store",
   })
   return readDropInApiResponse<DropIn>(response)
@@ -63,33 +61,31 @@ export async function getDropIn(id: string) {
 export async function createDropIn(input: CreateDropInInput) {
   const response = await fetch(dropInApiUrl("/drop-ins"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(input),
     cache: "no-store",
   })
   return readDropInApiResponse<DropIn>(response)
 }
 
-export async function rsvp(dropInId: string, userId: string) {
-  const response = await fetch(
-    dropInApiUrl(`/drop-ins/${dropInId}/rsvp`),
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-      cache: "no-store",
-    }
-  )
+// WHO is RSVPing comes from the JWT on the backend — no userId here.
+export async function rsvp(dropInId: string) {
+  const response = await fetch(dropInApiUrl(`/drop-ins/${dropInId}/rsvp`), {
+    method: "POST",
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
   if (!response.ok) {
     throw new DropInApiError(await getErrorMessage(response), response.status)
   }
 }
 
-export async function cancelRsvp(dropInId: string, userId: string) {
-  const response = await fetch(
-    dropInApiUrl(`/drop-ins/${dropInId}/rsvp/${userId}`),
-    { method: "DELETE", cache: "no-store" }
-  )
+export async function cancelRsvp(dropInId: string) {
+  const response = await fetch(dropInApiUrl(`/drop-ins/${dropInId}/rsvp`), {
+    method: "DELETE",
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
   if (!response.ok) {
     throw new DropInApiError(await getErrorMessage(response), response.status)
   }
@@ -137,6 +133,15 @@ export function formatStatus(status: DropInStatus) {
 
 function dropInApiUrl(path: string) {
   return `${getApiBaseUrl()}${path}`
+}
+
+// Attaches the Supabase JWT (when signed in) so dropin-service accepts the request.
+async function authHeaders(extra?: Record<string, string>) {
+  const token = await getAccessToken()
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
 }
 
 function getApiBaseUrl() {

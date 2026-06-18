@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { netHeightOptions, surfaceOptions } from "@/lib/courts"
+import { netHeightOptions, surfaceOptions } from "@/lib/form-options"
 
 const initialCreateCourtFormState: CreateCourtFormState = {
   formError: null,

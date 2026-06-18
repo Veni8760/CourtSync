@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { requireUser } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
@@ -25,7 +26,8 @@ export const metadata: Metadata = {
   description: "Create a volleyball court location in CourtSync.",
 }
 
-export default function CreateCourtPage() {
+export default async function CreateCourtPage() {
+  await requireUser()
   return (
     <main className="min-h-screen bg-muted/30">
       <section className="border-b bg-background">

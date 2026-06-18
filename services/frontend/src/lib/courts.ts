@@ -1,17 +1,12 @@
-export const surfaceOptions = [
-  { value: "INDOOR", label: "Indoor" },
-  { value: "GRASS", label: "Grass" },
-  { value: "BEACH", label: "Beach" },
-] as const
+import { getAccessToken } from "@/lib/auth"
+import {
+  netHeightOptions,
+  surfaceOptions,
+  type NetHeight,
+  type Surface,
+} from "@/lib/form-options"
 
-export const netHeightOptions = [
-  { value: "MENS", label: "Men's" },
-  { value: "WOMENS", label: "Women's" },
-  { value: "COED", label: "Coed" },
-] as const
-
-export type Surface = (typeof surfaceOptions)[number]["value"]
-export type NetHeight = (typeof netHeightOptions)[number]["value"]
+export type { NetHeight, Surface }
 
 export type Court = {
   id: string
@@ -50,6 +45,7 @@ export class CourtApiError extends Error {
 
 export async function listCourts() {
   const response = await fetch(courtApiUrl("/courts"), {
+    headers: await authHeaders(),
     cache: "no-store",
   })
 
@@ -58,6 +54,7 @@ export async function listCourts() {
 
 export async function getCourt(id: string) {
   const response = await fetch(courtApiUrl(`/courts/${id}`), {
+    headers: await authHeaders(),
     cache: "no-store",
   })
 
@@ -67,9 +64,7 @@ export async function getCourt(id: string) {
 export async function createCourt(input: CreateCourtInput) {
   const response = await fetch(courtApiUrl("/courts"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(input),
     cache: "no-store",
   })
@@ -92,6 +87,15 @@ export function formatNetHeight(netHeight: NetHeight) {
 
 function courtApiUrl(path: string) {
   return `${getApiBaseUrl()}${path}`
+}
+
+// Attaches the Supabase JWT (when signed in) so court-service accepts the request.
+async function authHeaders(extra?: Record<string, string>) {
+  const token = await getAccessToken()
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
 }
 
 function getApiBaseUrl() {

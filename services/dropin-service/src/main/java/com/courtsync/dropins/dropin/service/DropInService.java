@@ -40,7 +40,7 @@ public class DropInService {
     private final CourtClient courtClient;
 
     @Transactional
-    public DropInResponse create(CreateDropInRequest req) {
+    public DropInResponse create(CreateDropInRequest req, UUID organizerUserId) {
         // Cross-field rule a single-field annotation can't express → 400 here.
         if (!req.endTime().isAfter(req.startTime())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
@@ -54,7 +54,7 @@ public class DropInService {
 
         DropIn dropIn = new DropIn();
         dropIn.setCourtId(req.courtId());
-        dropIn.setOrganizerUserId(req.organizerUserId());
+        dropIn.setOrganizerUserId(organizerUserId);
         dropIn.setTitle(req.title());
         dropIn.setDescription(req.description());
         dropIn.setStartTime(req.startTime());

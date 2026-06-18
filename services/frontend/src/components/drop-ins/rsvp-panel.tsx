@@ -8,7 +8,6 @@ import {
   rsvpAction,
 } from "@/app/(app)/drop-ins/[id]/actions"
 import { Button } from "@/components/ui/button"
-import { useDevPlayerId } from "@/lib/dev-identity"
 
 export function RsvpPanel({
   dropInId,
@@ -17,16 +16,14 @@ export function RsvpPanel({
   dropInId: string
   disabled: boolean
 }) {
-  const userId = useDevPlayerId()
   const [isPending, startTransition] = useTransition()
 
   function handle(
     action: typeof rsvpAction,
     successMessage: string
   ) {
-    if (!userId) return
     startTransition(async () => {
-      const result = await action(dropInId, userId)
+      const result = await action(dropInId)
       if (result.ok) {
         toast.success(successMessage)
       } else {
@@ -35,19 +32,17 @@ export function RsvpPanel({
     })
   }
 
-  const ready = userId !== null && !isPending
-
   return (
     <div className="flex flex-wrap gap-3">
       <Button
-        disabled={!ready || disabled}
+        disabled={isPending || disabled}
         onClick={() => handle(rsvpAction, "RSVP confirmed")}
       >
         {isPending ? "Working…" : "RSVP"}
       </Button>
       <Button
         variant="outline"
-        disabled={!ready}
+        disabled={isPending}
         onClick={() => handle(cancelRsvpAction, "RSVP cancelled")}
       >
         Cancel RSVP

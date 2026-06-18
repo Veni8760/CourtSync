@@ -8,7 +8,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { DevPlayerBadge } from "@/components/drop-ins/dev-player-badge"
 import { DropInCard } from "@/components/drop-ins/drop-in-card"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -19,6 +18,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { requireUser } from "@/lib/auth"
 import { DropInApiError, listDropIns, type DropIn } from "@/lib/dropins"
 import { cn } from "@/lib/utils"
 
@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic"
 
 export default async function DropInsPage() {
+  await requireUser()
   const { dropIns, error } = await getDropIns()
 
   return (
@@ -51,7 +52,6 @@ export default async function DropInsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <DevPlayerBadge />
               <Link href="/drop-ins/create" className={cn(buttonVariants({ size: "lg" }))}>
                 <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
                 Create drop-in

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
+import { requireUser } from "@/lib/auth"
 import {
   cancelRsvp,
   DropInApiError,
@@ -12,11 +13,11 @@ import {
 export type RsvpActionResult = { ok: true } | { ok: false; error: string }
 
 export async function rsvpAction(
-  dropInId: string,
-  userId: string
+  dropInId: string
 ): Promise<RsvpActionResult> {
+  await requireUser()
   try {
-    await rsvp(dropInId, userId)
+    await rsvp(dropInId)
   } catch (error) {
     if (error instanceof DropInApiError) {
       return { ok: false, error: rsvpErrorMessage(error.status) }
@@ -28,11 +29,11 @@ export async function rsvpAction(
 }
 
 export async function cancelRsvpAction(
-  dropInId: string,
-  userId: string
+  dropInId: string
 ): Promise<RsvpActionResult> {
+  await requireUser()
   try {
-    await cancelRsvp(dropInId, userId)
+    await cancelRsvp(dropInId)
   } catch (error) {
     if (error instanceof DropInApiError) {
       // 404 on cancel means "you had no active RSVP" — not a missing drop-in.
