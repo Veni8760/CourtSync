@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 
 import { CreateDropInForm } from "@/components/drop-ins/create-drop-in-form"
 import { buttonVariants } from "@/components/ui/button"
+import { requireUser } from "@/lib/auth"
 import { listCourts, type Court } from "@/lib/courts"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +16,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic"
 
 export default async function CreateDropInPage() {
+  await requireUser()
   let courts: Court[] = []
   try {
     courts = await listCourts()

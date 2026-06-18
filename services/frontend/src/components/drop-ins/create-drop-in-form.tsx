@@ -35,8 +35,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import type { Court } from "@/lib/courts"
-import { useDevPlayerId } from "@/lib/dev-identity"
-import { skillLevelOptions } from "@/lib/dropins"
+import { skillLevelOptions } from "@/lib/form-options"
 
 const initialState: CreateDropInFormState = { formError: null, fieldErrors: {} }
 
@@ -45,8 +44,6 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
     createDropInAction,
     initialState
   )
-  const organizerUserId = useDevPlayerId() ?? ""
-  const ready = organizerUserId.length > 0
 
   return (
     <Card className="bg-background/80 shadow-sm">
@@ -58,8 +55,6 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
       </CardHeader>
       <CardContent>
         <form id="create-drop-in-form" action={formAction} className="flex flex-col gap-5">
-          <input type="hidden" name="organizerUserId" value={organizerUserId} />
-
           <FieldGroup>
             <Field data-invalid={!!state.fieldErrors.courtId}>
               <FieldLabel>Court</FieldLabel>
@@ -206,7 +201,7 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
           <HugeiconsIcon icon={VolleyballIcon} />
           The court is validated by court-service over gRPC on submit.
         </div>
-        <Button type="submit" form="create-drop-in-form" disabled={isPending || !ready}>
+        <Button type="submit" form="create-drop-in-form" disabled={isPending}>
           <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
           {isPending ? "Creating" : "Create drop-in"}
         </Button>

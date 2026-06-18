@@ -11,7 +11,6 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
-import { DevPlayerBadge } from "@/components/drop-ins/dev-player-badge"
 import { RsvpPanel } from "@/components/drop-ins/rsvp-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +22,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { requireUser } from "@/lib/auth"
 import { getCourt } from "@/lib/courts"
 import {
   DropInApiError,
@@ -40,6 +40,7 @@ type DropInDetailPageProps = {
 export const dynamic = "force-dynamic"
 
 export default async function DropInDetailPage({ params }: DropInDetailPageProps) {
+  await requireUser()
   const { id } = await params
 
   let dropIn
@@ -70,7 +71,6 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
             <Badge variant={dropIn.status === "OPEN" ? "default" : "secondary"}>
               {formatStatus(dropIn.status)}
             </Badge>
-            <DevPlayerBadge />
           </div>
           <h1 className="font-heading text-3xl font-semibold text-foreground sm:text-4xl">
             {dropIn.title}

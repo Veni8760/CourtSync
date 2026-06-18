@@ -3,12 +3,12 @@
 import { redirect } from "next/navigation"
 import { z } from "zod/v4"
 
+import { requireUser } from "@/lib/auth"
 import { createDropIn, DropInApiError } from "@/lib/dropins"
 
 const createDropInSchema = z
   .object({
     courtId: z.string().min(1, "Select a court."),
-    organizerUserId: z.string().min(1, "Missing dev identity — reload the page."),
     title: z.string().trim().min(1, "Title is required.").max(255),
     description: optionalTrimmedString(2000),
     startTime: isoDateTime("Start time is required."),
@@ -36,9 +36,9 @@ export async function createDropInAction(
   _state: CreateDropInFormState,
   formData: FormData
 ): Promise<CreateDropInFormState> {
+  await requireUser()
   const result = createDropInSchema.safeParse({
     courtId: formData.get("courtId"),
-    organizerUserId: formData.get("organizerUserId"),
     title: formData.get("title"),
     description: formData.get("description"),
     startTime: formData.get("startTime"),

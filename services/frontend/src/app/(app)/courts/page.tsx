@@ -28,6 +28,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { requireUser } from "@/lib/auth"
 import {
   CourtApiError,
   formatNetHeight,
@@ -45,6 +46,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic"
 
 export default async function CourtsPage() {
+  await requireUser()
   const { courts, error } = await getCourts()
 
   return (

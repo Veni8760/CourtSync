@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { z } from "zod/v4"
 
+import { requireUser } from "@/lib/auth"
 import {
   createCourt,
   CourtApiError,
@@ -40,6 +41,7 @@ export async function createCourtAction(
   _state: CreateCourtFormState,
   formData: FormData
 ): Promise<CreateCourtFormState> {
+  await requireUser()
   const result = createCourtSchema.safeParse({
     name: formData.get("name"),
     address: formData.get("address"),

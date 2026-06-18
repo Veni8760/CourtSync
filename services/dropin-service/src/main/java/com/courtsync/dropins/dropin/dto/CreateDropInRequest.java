@@ -17,10 +17,11 @@ import jakarta.validation.constraints.PositiveOrZero;
  *
  * start-before-end is a CROSS-FIELD rule a single-field annotation can't express,
  * so the service checks it and returns 400 there.
+ *
+ * The organizer is NOT in the body — it comes from the authenticated JWT (sub).
  */
 public record CreateDropInRequest(
         @NotNull(message = "courtId is required") UUID courtId,
-        @NotNull(message = "organizerUserId is required") UUID organizerUserId,
         @NotBlank(message = "title is required") String title,
         String description,
         @NotNull(message = "startTime is required") @Future(message = "startTime must be in the future") Instant startTime,
