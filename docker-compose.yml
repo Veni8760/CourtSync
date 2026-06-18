@@ -76,6 +76,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # Search read store. Single-node, security off — LOCAL DEV ONLY. Version pinned
+  # to the Elasticsearch client Spring Boot 4.0.2 manages (9.2.x) to avoid a
+  # client/server mismatch. ES_JAVA_OPTS caps heap so it fits a laptop.
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.2.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
   # ---------------------------------------------------------------------------
   # Backend services
   # ---------------------------------------------------------------------------
@@ -154,6 +171,20 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       kafka:
+        condition: service_healthy
+
+  # Drop-in search read model: consumes dropin-events → indexes into Elasticsearch.
+  search-service:
+    build: ./services/search-service
+    ports:
+      - "8087:8087"
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+    depends_on:
+      kafka:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------

@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: search-service
+  # The read store. Spring Data Elasticsearch creates the drop-ins index from the
+  # @Document mapping on first use.
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: search-service
+      # Start from the beginning so a fresh consumer indexes drop-ins created
+      # before it first connected.
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+courtsync:
+  kafka:
+    dropin-topic: ${COURTSYNC_KAFKA_DROPIN_TOPIC:dropin-events}
+
+server:
+  port: ${SERVER_PORT:8087}

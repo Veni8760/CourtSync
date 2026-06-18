@@ -184,6 +184,17 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   resolver from `lib/{courts,dropins}.ts` into `lib/api.ts`; removed unused `GET /users` +
   `GET /users/{id}` and the orphaned `UserService.findAll()`. (Audit flagged `mock-data.ts` —
   1423 lines backing not-yet-wired pages — as the big future cut once those pages get backends.)
+- **Search Phase 1 — location onto the drop-in event (merged, PR #10):** `court.proto` `Court`
+  gained `optional` lat/lng/city; court-service maps them; `CourtClient.courtExists`→`getCourt`
+  returns a `CourtView`; V2 migration + entity add `latitude`/`longitude`/`city` to `drop_ins`;
+  `DropInService.create` stamps them from the existing court gRPC call and enriches `DROP_IN_CREATED`.
+  Unit test green; both services recompile. (Runtime kafka-ui check still Daniel's.)
+- **Search Phase 2 — Elasticsearch read model (this session, NOT yet merged):** new
+  `services/search-service` (Spring Boot 4, port **8087** — 8088 is kafka-ui): `@KafkaListener` on
+  `dropin-events` decodes `DROP_IN_CREATED` (ignores RSVP events) and upserts a `DropInDocument`
+  (`@Document`, `geo_point` location) via Spring Data Elasticsearch. ES client pinned to **9.2.3**
+  (the version Boot 4.0.2 manages) in docker-compose + a `search-service` container. Consumer unit
+  test green (`mvnw test`). Standard layout: `common/HealthController`, `dropin/{document,repository,consumer}`.
 
 ## What's unfinished / open questions
 - [ ] **Live end-to-end test not done by Daniel yet:** sign in (keeping email confirmation ON —
@@ -208,29 +219,30 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## What's next (one finishable chunk) — Search Phase 1: location flows onto the drop-in event
-The foundation everything else needs: a drop-in doesn't own location (the court does), so before
-ES can index "nearby" we must get court lat/lng/city onto the drop-in and into its Kafka event.
-dropin-service **already** gRPC-fetches the court at create time (to validate it) — we just stop
-discarding that response and stash the location. No ES yet; provable entirely via kafka-ui.
+## What's next (one finishable chunk) — Search Phase 3: the geo query endpoint
+Search Phase 2 stands up the read model (events → ES). Phase 3 makes it queryable: a REST
+endpoint on search-service that runs an Elasticsearch `geo_distance` query, exposed to the
+browser through the gateway. This is the first time search returns results.
 
-**Done when** creating a drop-in produces a `DROP_IN_CREATED` event on `dropin-events` that
-carries `latitude`, `longitude`, and `city` (verified in kafka-ui), and the values match the
-drop-in's court.
+**Done when** `GET /api/search/drop-ins?lat=43.65&lng=-79.38&radiusKm=10` (through the gateway)
+returns the drop-ins whose `location` is within the radius, nearest first — verified against a
+couple of seeded drop-ins at known coordinates.
 
-- [ ] `shared/proto/court.proto`: add `double latitude`, `double longitude`, `string city` to `Court`
-- [ ] court-service `CourtGrpcService.toResponse()`: map those from `CourtResponse` (entity already has them)
-- [ ] dropin-service `CourtClient`: change `courtExists()` → `getCourt()` returning a small court view
-      (keep the NOT_FOUND→false / other-error→throw logic); `DropInService.create` uses it
-- [ ] Flyway migration on dropin schema: add `latitude`, `longitude`, `city` to `drop_ins` (+ entity fields)
-- [ ] `DropInService.create`: stash court lat/lng/city onto the row; enrich `DropinEvents.DropInCreated`
-- [ ] one test: create → event payload carries the location; regen protoc stubs both services build
+- [ ] First, **prove Phase 2 at runtime**: `docker compose up -d --build elasticsearch search-service`,
+      create a drop-in (at a court WITH coordinates), confirm a doc lands in ES
+      (`curl localhost:9200/drop-ins/_search`) and search-service logs "Indexed drop-in …"
+- [ ] `DropInSearchRepository`: derived geo query (`findByLocationNear(GeoPoint, Distance)`) or a
+      `@Query`/`NativeQuery` `geo_distance`
+- [ ] `dropin/controller/SearchController`: `GET /search/drop-ins?lat&lng&radiusKm` → query → DTO list
+- [ ] api-gateway: route `/api/search/**` → `search-service:8087` (add `SEARCH_SERVICE_URL` env)
+- [ ] search-service security: add `spring-boot-starter-oauth2-resource-server` + `SecurityConfig`
+      (same per-service Supabase JWT pattern; `/health`+actuator public) — search is authenticated like the rest
+- [ ] test: index two docs, query a tight radius, assert only the near one returns
 
 Out of scope (parked) — later phases of the search vertical, in order:
-- Search Phase 2: ES container in docker-compose + Search Service (port 8088) consuming `dropin-events` → index docs with a `geo_point`
-- Search Phase 3: `GET /search/drop-ins?lat=&lng=&radiusKm=&...` geo_distance query + gateway route `/api/search/*`
 - Search Phase 4: frontend "near me" (browser geolocation) + Redis caches the geo-search response
 - Search Phase 5: layer the easy filters (skill / maxPrice / date / status) onto the search query
+- Note: `DROP_IN_CREATED` doesn't carry title/price/skill yet — fatten the event (+ `DropInDocument`) when the search UI needs to render them (Phase 4/5)
 Other parked items:
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
 - MASTER.md §8.6/§10.3 row-lock booking language contradicts the decided ReserveSlot/ReleaseSlot gRPC design — reconcile in a MASTER edit
