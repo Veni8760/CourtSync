@@ -140,7 +140,13 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   400s carry `errors:{field→msg}`, 500s never leak internals. Frontend `getErrorMessage`
   reads `detail`. Convention documented in CLAUDE.md. Curl-verified every error path incl.
   gRPC-translated court-not-found and duplicate RSVP; happy paths unchanged.
-- [ ] messaging/payment placeholders, remaining cross-cutting polish
+- [x] **Story B cleanup (2026-06-18):** deleted the empty `messaging-service`,
+  `payment-service`, `search-service` skeletons (bloat — never implemented). Stripped them from
+  `docker-compose.yml`, `.env.example`, `infra/postgres/init.sql`, and the DropinEvents comment.
+  `docker compose config` validates. They live in the MASTER.md vision; re-add when a real flow
+  needs them. (Note: the earlier `feeb09a "clean up"` commit nuked the *whole* backend and was
+  reverted — this is the surgical version.)
+- [ ] remaining cross-cutting polish
 
 ### Later (NOT in skeleton): auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics.
 
@@ -213,10 +219,10 @@ motion QA, then verify signed-in `/` → `/home`, signed-in `/home`, and sign-ou
 real Supabase session.
 
 **Open a PR for `feature/global-exception-handler` and merge it** (PR #3 for the user vertical
-is already merged), then the last Phase 3 slice: **messaging + payment placeholder services** —
-each gets its Flyway V1 (per the hardened DBML), an empty feature package skeleton, and stays
-bootable. **Done when** the full `docker compose up` stack is healthy with all services
-validating their schemas.
+is already merged). It now also carries the Story B cleanup (deleted messaging/payment/search).
+Skeleton is now minimal: gateway, user, court, dropin (Java) + notification (Go) + frontend.
+**Done when** the full `docker compose up` stack is healthy with all DB-backed services
+validating their schemas. Build new services back only when a real end-to-end flow needs one.
 
 Out of scope (parked):
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)

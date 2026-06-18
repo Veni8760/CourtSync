@@ -8,7 +8,7 @@ import java.util.UUID;
  * Event payloads published to the {@code dropin-events} topic. These records ARE
  * the wire contract (shared/event-contracts/events.md) — Jackson serializes each
  * component name → JSON field, so the field names here must match exactly, since
- * the Go notification-service and the search-service decode this JSON.
+ * the Go notification-service decodes this JSON.
  *
  * Lives in a top-level event/ package (not inside dropin/ or rsvp/) because both
  * features publish through it — it's a shared leaf that depends on nothing.

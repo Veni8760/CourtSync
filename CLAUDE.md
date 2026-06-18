@@ -18,7 +18,7 @@ microservices* — favor depth, correctness, and idiomatic patterns over speed.
 
 First goal is a clean microservices **skeleton** with one end-to-end flow:
 create court → create drop-in → view → RSVP → publish `RSVP_CREATED` to Kafka → consumed +
-logged by the Go notification-service and the search-service. See MASTER.md §20 for the
+logged by the Go notification-service. See MASTER.md §20 for the
 milestone definition.
 
 ## Architecture
@@ -29,9 +29,10 @@ Polyglot microservices behind an API gateway, async via Kafka, all run with Dock
 Next.js frontend → API Gateway (Spring Cloud Gateway) → REST → domain services → Kafka (async)
 ```
 
-Services (`services/`): `api-gateway`, `user-service`, `court-service`, `dropin-service`,
-`messaging-service`, `payment-service`, `search-service` (all **Java Spring Boot**, Maven),
-plus `notification-service` (**Go** — Kafka consumer + `/health`). `frontend/` is Next.js.
+Services (`services/`): `api-gateway`, `user-service`, `court-service`, `dropin-service`
+(all **Java Spring Boot**, Maven), plus `notification-service` (**Go** — Kafka consumer +
+`/health`). `frontend/` is Next.js. (`messaging`, `payment`, `search` are in the MASTER.md
+vision but not yet built — start minimal, add them back when a real flow needs them.)
 Infra: hosted Supabase Postgres, local Kafka (KRaft, no Zookeeper), Redis. Later: Elasticsearch, k8s, Rust analytics.
 
 Key rules (from MASTER.md):
