@@ -75,6 +75,20 @@ public class DropIn {
     @Column(name = "skill_level")
     private String skillLevel;
 
+    /**
+     * Court location, denormalized from court-service at creation so search can
+     * index "nearby" without a cross-service read. Nullable: the court may have
+     * no coordinates. Never updated — a drop-in's court is fixed.
+     */
+    @Column
+    private Double latitude;
+
+    @Column
+    private Double longitude;
+
+    @Column
+    private String city;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DropInStatus status = DropInStatus.OPEN;

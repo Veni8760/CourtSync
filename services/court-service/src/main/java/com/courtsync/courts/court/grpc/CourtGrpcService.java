@@ -64,13 +64,23 @@ public class CourtGrpcService extends CourtServiceGrpc.CourtServiceImplBase {
     }
 
     private GetCourtResponse toResponse(CourtResponse c) {
-        Court court = Court.newBuilder()
+        Court.Builder court = Court.newBuilder()
                 .setId(c.id().toString())
                 .setName(c.name())
                 // Enums travel as their name string (e.g. "BEACH", "COED") for v1 simplicity.
                 .setSurface(c.surface().name())
-                .setNetHeight(c.netHeight().name())
-                .build();
-        return GetCourtResponse.newBuilder().setCourt(court).build();
+                .setNetHeight(c.netHeight().name());
+        // Location is optional on the court; only set present fields so the client
+        // can tell "no coordinates" apart from a real (0,0).
+        if (c.latitude() != null) {
+            court.setLatitude(c.latitude());
+        }
+        if (c.longitude() != null) {
+            court.setLongitude(c.longitude());
+        }
+        if (c.city() != null) {
+            court.setCity(c.city());
+        }
+        return GetCourtResponse.newBuilder().setCourt(court.build()).build();
     }
 }

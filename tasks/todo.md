@@ -174,40 +174,66 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   client-safe `lib/form-options.ts` to fix a `next/headers`-in-client-bundle build error.
 - **Stack verified live:** `docker compose up -d --build` healthy; all `/health` UP;
   gateway returns **401** for unauthenticated `/api/courts`, `/api/drop-ins`, `/api/users/me`.
-- **Signup UX (UNCOMMITTED — see below):** added a dedicated `/signup/check-email` page
-  (shadcn `Empty`) and changed `signup` action to `redirect()` there when email confirmation
-  is required, instead of leaving the user on the filled form. `pnpm build` + live render pass.
+- **Signup UX (merged, PR #7):** dedicated `/signup/check-email` page (shadcn `Empty`); `signup`
+  action `redirect()`s there when email confirmation is required, instead of leaving the user on
+  the filled form. Pruned the dead `AuthFormState.message` slot.
+- **Product rename VolleyIQ → CourtSync (merged, PR #8):** brand swept across frontend UI, docs,
+  task files, the session-end skill; `volleyiq-*` files + `.gitignore` entry renamed. Backend was
+  already `com.courtsync`. (Rebuild frontend container to see it: `docker compose up -d --build frontend`.)
+- **Ponytail audit cuts (merged, PR #9):** extracted byte-identical `authHeaders()` + base-URL
+  resolver from `lib/{courts,dropins}.ts` into `lib/api.ts`; removed unused `GET /users` +
+  `GET /users/{id}` and the orphaned `UserService.findAll()`. (Audit flagged `mock-data.ts` —
+  1423 lines backing not-yet-wired pages — as the big future cut once those pages get backends.)
 
 ## What's unfinished / open questions
-- [ ] **Signup-UX change is uncommitted** on the working tree (no branch): new
-  `app/(auth)/signup/check-email/page.tsx` + edited `signup/actions.ts`. Pending Daniel's
-  visual test, then commit→push→merge (no self-attribution). Dead `state.message` slot in
-  `signup-form.tsx` can be pruned then too.
-- [ ] **Live end-to-end test not done by Daniel yet:** sign in (confirm email OR disable
-  confirmation in Supabase dashboard → Auth → Email → "Confirm email" off), then
-  court → drop-in → RSVP → watch Kafka (`docker compose logs -f notification-service`).
+- [ ] **Live end-to-end test not done by Daniel yet:** sign in (keeping email confirmation ON —
+  decided), confirm via email, then court → drop-in → RSVP → watch Kafka
+  (`docker compose logs -f notification-service` for `RSVP_CREATED`).
 - [ ] Supabase **Auth → URL Configuration** must allow `http://localhost:3000` for the
   email confirmation link to return to localhost.
 - [ ] api-gateway has no auth of its own (passes through, forwards the bearer header) — fine
   for now since each service validates; revisit if we want edge auth.
-- Redis is wired into dropin-service but **unused** right now (future locking; RSVP uses
-  Postgres row locks). Benign "Spring Data Redis could not identify store" log noise.
+- Redis is wired into dropin-service but **unused** today. It gets a real job in the search
+  vertical below (cache the geo-search response) — which also makes the resume "Kafka + Redis"
+  claim true. Until then: benign "Spring Data Redis could not identify store" log noise.
 - `courts.courts` has RLS disabled — fine for backend-only JDBC; revisit before any client-side Supabase access.
 - `SUPABASE_DB_PASSWORD` must be set in local `.env`.
 
-## What's next (one finishable chunk)
-**Land the signup-UX change, then do a real signed-in end-to-end pass.** Scope: commit +
-push + merge the check-email page (prune the dead `state.message`), then exercise the live
-auth vertical as a signed-in user. **Done when** the change is on `main` AND Daniel has, while
-signed in, created a court, created a drop-in, RSVP'd, and seen `RSVP_CREATED` in the
-notification-service logs.
-- [ ] Decide email-confirm vs. disable-confirmation for dev testing
-- [ ] Commit + merge signup-UX (no self-attribution); prune dead `state.message` in signup-form
-- [ ] Signed-in smoke: court create → drop-in create → RSVP → notification-service logs the event
+### Direction decided (2026-06-18): build the Elasticsearch geo-search vertical next
+Driven by resume bullets that must be true + interview-defensible: *"sub-second geo-search for
+nearby drop-ins via Elasticsearch over PostgreSQL"* and *"event-driven backend on Kafka and Redis."*
+Architecture: Postgres = system of record; **Elasticsearch = derived read index** (CQRS read model)
+kept in sync by **Kafka** (`dropin-events` → Search Service → ES); **Redis** caches hot geo queries.
+A separate **Search Service** is justified *here* (not ceremony) because it owns a different store
+fed by events. Communities deferred until after search. Search is REST at the edge
+(browser → gateway → search-service); ES is internal to that service.
 
-Out of scope (parked):
+## What's next (one finishable chunk) — Search Phase 1: location flows onto the drop-in event
+The foundation everything else needs: a drop-in doesn't own location (the court does), so before
+ES can index "nearby" we must get court lat/lng/city onto the drop-in and into its Kafka event.
+dropin-service **already** gRPC-fetches the court at create time (to validate it) — we just stop
+discarding that response and stash the location. No ES yet; provable entirely via kafka-ui.
+
+**Done when** creating a drop-in produces a `DROP_IN_CREATED` event on `dropin-events` that
+carries `latitude`, `longitude`, and `city` (verified in kafka-ui), and the values match the
+drop-in's court.
+
+- [ ] `shared/proto/court.proto`: add `double latitude`, `double longitude`, `string city` to `Court`
+- [ ] court-service `CourtGrpcService.toResponse()`: map those from `CourtResponse` (entity already has them)
+- [ ] dropin-service `CourtClient`: change `courtExists()` → `getCourt()` returning a small court view
+      (keep the NOT_FOUND→false / other-error→throw logic); `DropInService.create` uses it
+- [ ] Flyway migration on dropin schema: add `latitude`, `longitude`, `city` to `drop_ins` (+ entity fields)
+- [ ] `DropInService.create`: stash court lat/lng/city onto the row; enrich `DropinEvents.DropInCreated`
+- [ ] one test: create → event payload carries the location; regen protoc stubs both services build
+
+Out of scope (parked) — later phases of the search vertical, in order:
+- Search Phase 2: ES container in docker-compose + Search Service (port 8088) consuming `dropin-events` → index docs with a `geo_point`
+- Search Phase 3: `GET /search/drop-ins?lat=&lng=&radiusKm=&...` geo_distance query + gateway route `/api/search/*`
+- Search Phase 4: frontend "near me" (browser geolocation) + Redis caches the geo-search response
+- Search Phase 5: layer the easy filters (skill / maxPrice / date / status) onto the search query
+Other parked items:
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
 - MASTER.md §8.6/§10.3 row-lock booking language contradicts the decided ReserveSlot/ReleaseSlot gRPC design — reconcile in a MASTER edit
 - Migrate Kafka event payloads JSON → Protobuf (touches Go + frontend TS)
-- Edge auth at the gateway (currently per-service only)
-- Later: Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics
+- Communities Service (deferred until search ships)
+- Later: WebSocket chat, Resend email, Stripe, k8s, Rust analytics

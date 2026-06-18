@@ -1,11 +1,14 @@
 package com.courtsync.dropins.dropin.grpc;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
+import com.courtsync.proto.court.v1.Court;
 import com.courtsync.proto.court.v1.CourtServiceGrpc.CourtServiceBlockingStub;
 import com.courtsync.proto.court.v1.GetCourtRequest;
+import com.courtsync.proto.court.v1.GetCourtResponse;
 
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -28,20 +31,33 @@ public class CourtClient {
 
     private final CourtServiceBlockingStub courtServiceStub;
 
+    /** Just the court fields dropin-service denormalizes onto a drop-in. */
+    public record CourtView(Double latitude, Double longitude, String city) {
+    }
+
     /**
-     * @return true if court-service knows this court, false if it returned NOT_FOUND.
+     * Look up a court for validation + location denormalization.
+     *
+     * @return the court's location view if court-service knows it; empty if it
+     *         returned NOT_FOUND (so the caller can raise its own domain error).
      * @throws StatusRuntimeException for any other failure (e.g. court-service down) —
      *         that's an infrastructure problem, distinct from "the court doesn't exist".
      */
-    public boolean courtExists(UUID courtId) {
+    public Optional<CourtView> getCourt(UUID courtId) {
         try {
-            courtServiceStub.getCourt(GetCourtRequest.newBuilder()
+            GetCourtResponse response = courtServiceStub.getCourt(GetCourtRequest.newBuilder()
                     .setId(courtId.toString())
                     .build());
-            return true;
+            Court c = response.getCourt();
+            // proto `optional` → use hasX() so an absent coordinate stays null,
+            // never a fabricated (0,0).
+            return Optional.of(new CourtView(
+                    c.hasLatitude() ? c.getLatitude() : null,
+                    c.hasLongitude() ? c.getLongitude() : null,
+                    c.hasCity() ? c.getCity() : null));
         } catch (StatusRuntimeException e) {
             if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
-                return false;
+                return Optional.empty();
             }
             log.error("gRPC GetCourt call failed for court={}: {}", courtId, e.getStatus());
             throw e;
