@@ -20,24 +20,30 @@ public final class DropinEvents {
 
     /**
      * Published after a drop-in is created. Carries the denormalized court
-     * location (lat/lng/city) so the search index can place it "nearby" without
-     * calling back to any service. Nullable when the court has no coordinates.
+     * location (lat/lng/city) so the search index can place it "nearby", plus the
+     * card fields (title/price/skillLevel) so a search result is self-sufficient —
+     * the read model never calls back to dropin-service. Location nullable when the
+     * court has no coordinates.
      */
     public record DropInCreated(
             String eventType,
             UUID dropInId,
             UUID courtId,
             UUID organizerUserId,
+            String title,
             Instant startTime,
+            BigDecimal price,
+            String skillLevel,
             Double latitude,
             Double longitude,
             String city,
             Instant timestamp) {
 
-        public static DropInCreated of(UUID dropInId, UUID courtId, UUID organizerUserId, Instant startTime,
+        public static DropInCreated of(UUID dropInId, UUID courtId, UUID organizerUserId, String title,
+                Instant startTime, BigDecimal price, String skillLevel,
                 Double latitude, Double longitude, String city) {
-            return new DropInCreated("DROP_IN_CREATED", dropInId, courtId, organizerUserId, startTime,
-                    latitude, longitude, city, Instant.now());
+            return new DropInCreated("DROP_IN_CREATED", dropInId, courtId, organizerUserId, title,
+                    startTime, price, skillLevel, latitude, longitude, city, Instant.now());
         }
     }
 

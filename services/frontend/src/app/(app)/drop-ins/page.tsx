@@ -52,6 +52,12 @@ export default async function DropInsPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <Link
+                href="/drop-ins/near-me"
+                className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+              >
+                Near me
+              </Link>
               <Link href="/drop-ins/create" className={cn(buttonVariants({ size: "lg" }))}>
                 <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
                 Create drop-in

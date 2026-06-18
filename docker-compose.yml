@@ -182,11 +182,15 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       SUPABASE_AUTH_ISSUER: ${SUPABASE_AUTH_ISSUER:-https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
     depends_on:
       kafka:
         condition: service_healthy
       elasticsearch:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------

@@ -209,6 +209,13 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   nearest-first in-app (haversine) and returns a `DropInSearchResult` DTO with each `distanceKm`. Gateway
   routes `/api/search/**` → `search-service:8087`. search-service is now a JWT resource server too
   (`SecurityConfig` + issuer-uri, same per-service pattern). Service unit test green (nearest-first + distance).
+- **Search Phase 4 — "near me" UI + Redis cache (this session, NOT yet merged):** fattened
+  `DROP_IN_CREATED` (+ `DropInDocument` + DTO) with title/price/skillLevel so a search result is a
+  self-sufficient card. search-service caches `findNearby` in **Redis** (`@Cacheable`, key = ~100m-rounded
+  lat/lng/radius, 60s TTL) — Redis now has a real job (resume "Kafka + Redis" true). Frontend
+  `/drop-ins/near-me` (client `navigator.geolocation` → server action → gateway) renders nearest-first
+  cards; "Near me" link added to the drop-ins page. **Verified live:** create → ES doc carries
+  title/price/skill → search returns them → Redis key `nearby-dropins::…` populated. Frontend builds.
 
 ## What's unfinished / open questions
 - [ ] **Live end-to-end test not done by Daniel yet:** sign in (keeping email confirmation ON —
@@ -218,9 +225,9 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   email confirmation link to return to localhost.
 - [ ] api-gateway has no auth of its own (passes through, forwards the bearer header) — fine
   for now since each service validates; revisit if we want edge auth.
-- Redis is wired into dropin-service but **unused** today. It gets a real job in the search
-  vertical below (cache the geo-search response) — which also makes the resume "Kafka + Redis"
-  claim true. Until then: benign "Spring Data Redis could not identify store" log noise.
+- Redis now has a real job: search-service caches the geo-search response (`@Cacheable`, 60s TTL).
+  dropin-service still pulls in Spring Data Redis but doesn't use it (benign "could not identify
+  store" log noise there) — wire it for RSVP locking later, or drop the dep.
 - `courts.courts` has RLS disabled — fine for backend-only JDBC; revisit before any client-side Supabase access.
 - `SUPABASE_DB_PASSWORD` must be set in local `.env`.
 
@@ -233,26 +240,25 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## What's next (one finishable chunk) — Search Phase 4: frontend "near me" + Redis cache
-The backend search vertical (Phases 1–3) is code-complete. Phase 4 makes it visible and makes
-the resume's "Redis" claim true: a frontend page that asks the browser for the user's location
-and calls `/api/search/drop-ins`, plus a Redis cache in search-service for the geo response.
+## What's next (one finishable chunk) — Search Phase 5: layer filters onto geo-search
+Phases 1–4 (location → ES read model → geo query → "near me" UI + Redis) are done. Phase 5
+adds the easy filters on top of the radius: skill / maxPrice / date-window / free-only. The
+fields already live on `DropInDocument` (title/price/skillLevel/startTime), so this is mostly
+query + params, no new event work.
 
-**Done when** a signed-in user opens the "near me" page, the browser geolocation prompt fires,
-and nearby drop-ins render nearest-first; a repeated identical query is served from Redis (log
-or TTL key visible), not a fresh ES hit.
+**Done when** `GET /api/search/drop-ins?lat&lng&radiusKm&skill=&maxPrice=&from=&to=` narrows the
+results by those filters (combined with the geo radius), with a test proving each filter narrows.
 
-- [x] **Prove Phases 2–3 at runtime** — DONE this session: signed-in court→drop-in→ES→
-      `GET /api/search/drop-ins` returns nearest-first. Fixed the gRPC-auth bug found along the way (PR #13).
-- [ ] search-service: `lib`-side fetch in `services/frontend/src/lib/search.ts` (REST, Bearer, via gateway)
-- [ ] frontend page (e.g. `/drop-ins/near-me` or a tab): `navigator.geolocation` → query → render cards
-- [ ] search-service: Redis cache on `findNearby` (`spring-boot-starter-data-redis` + `@Cacheable`,
-      key = rounded lat/lng/radius, short TTL) — gives search-service its Redis job
-- [ ] decide: does the result need title/price? if yes, fatten `DROP_IN_CREATED` + `DropInDocument` first
+- [ ] `DropInSearchService` / repository: add optional skill / maxPrice / date-range filters to the
+      ES query (combine with the existing geo_distance — a bool query, or post-filter the small set)
+- [ ] `SearchController`: accept the optional `@RequestParam`s
+- [ ] frontend `/drop-ins/near-me`: simple filter controls (native `<select>`/`<input>`), pass through
+- [ ] test: two docs differing in skill/price; assert each filter narrows correctly
+- [ ] cache key must include the filters (extend the `@Cacheable` key)
 
 Out of scope (parked):
-- Search Phase 5: layer the easy filters (skill / maxPrice / date / status) onto the search query
-- `DROP_IN_CREATED` doesn't carry title/price/skill yet — fatten the event (+ `DropInDocument`) when the UI needs to render them
+- Re-run the **RSVP → notification** e2e (RSVP_CREATED → notification-service logs) — separate event flow, not yet runtime-verified this session
+- Clean up the test courts/drop-ins left in hosted DB + ES (no DELETE endpoints; clear directly)
 Other parked items:
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
 - MASTER.md §8.6/§10.3 row-lock booking language contradicts the decided ReserveSlot/ReleaseSlot gRPC design — reconcile in a MASTER edit

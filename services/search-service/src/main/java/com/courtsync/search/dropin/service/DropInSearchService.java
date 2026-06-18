@@ -3,11 +3,13 @@ package com.courtsync.search.dropin.service;
 import java.util.Comparator;
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.elasticsearch.core.geo.GeoPoint;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.Metrics;
 import org.springframework.stereotype.Service;
 
+import com.courtsync.search.config.CacheConfig;
 import com.courtsync.search.dropin.document.DropInDocument;
 import com.courtsync.search.dropin.dto.DropInSearchResult;
 import com.courtsync.search.dropin.repository.DropInSearchRepository;
@@ -27,6 +29,10 @@ public class DropInSearchService {
 
     private final DropInSearchRepository repository;
 
+    // Cache by ~100m-rounded coordinates + radius so repeated "near me" queries from
+    // the same spot hit Redis instead of Elasticsearch (the "sub-second" win). 60s TTL.
+    @Cacheable(cacheNames = CacheConfig.NEARBY_CACHE,
+            key = "T(java.lang.Math).round(#lat*1000) + ':' + T(java.lang.Math).round(#lng*1000) + ':' + #radiusKm")
     public List<DropInSearchResult> findNearby(double lat, double lng, double radiusKm) {
         GeoPoint center = new GeoPoint(lat, lng);
         Distance radius = new Distance(radiusKm, Metrics.KILOMETERS);
@@ -43,8 +49,9 @@ public class DropInSearchService {
         GeoPoint loc = doc.getLocation();
         double distanceKm = haversineKm(fromLat, fromLng, loc.getLat(), loc.getLon());
         return new DropInSearchResult(
-                doc.getId(), doc.getCourtId(), doc.getCity(),
-                loc.getLat(), loc.getLon(), distanceKm, doc.getStartTime());
+                doc.getId(), doc.getTitle(), doc.getCourtId(), doc.getCity(),
+                loc.getLat(), loc.getLon(), distanceKm,
+                doc.getPrice(), doc.getSkillLevel(), doc.getStartTime());
     }
 
     /** Great-circle distance between two lat/lng points, in kilometres. */

@@ -32,6 +32,15 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-elasticsearch</artifactId>
 		</dependency>
+		<!-- Redis: caches the hot geo-search response (sub-second on repeat queries). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
 		<!-- Kafka consumer of dropin-events. Boot 4 needs the starter (not raw spring-kafka)
 		     for autoconfiguration to kick in. -->
 		<dependency>

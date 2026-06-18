@@ -17,7 +17,10 @@ public record DropInCreatedEvent(
         String dropInId,
         String courtId,
         String organizerUserId,
+        String title,
         Instant startTime,
+        Double price,
+        String skillLevel,
         Double latitude,
         Double longitude,
         String city) {

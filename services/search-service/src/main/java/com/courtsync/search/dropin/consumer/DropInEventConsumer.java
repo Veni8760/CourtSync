@@ -54,9 +54,12 @@ public class DropInEventConsumer {
     private DropInDocument toDocument(DropInCreatedEvent e) {
         DropInDocument doc = new DropInDocument();
         doc.setId(e.dropInId());
+        doc.setTitle(e.title());
         doc.setCourtId(e.courtId());
         doc.setOrganizerUserId(e.organizerUserId());
         doc.setStartTime(e.startTime());
+        doc.setPrice(e.price());
+        doc.setSkillLevel(e.skillLevel());
         doc.setCity(e.city());
         // Only set the geo_point when both coordinates are present — never (0,0).
         if (e.latitude() != null && e.longitude() != null) {
