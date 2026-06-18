@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **`MASTER.md`** (repo root) is the canonical spec for the entire build — architecture,
 services, Kafka events, DB tables, build order, milestones. Read it before doing anything.
-Older docs (`volleyiq_mvp_design_document.md`, `docs/superpowers/specs/...`) are historical
+Older docs (`courtsync_mvp_design_document.md`, `docs/superpowers/specs/...`) are historical
 brainstorming from a previous **abandoned** design (a Spring Modulith monolith on Supabase +
 Stripe Connect). Do not follow them.
 

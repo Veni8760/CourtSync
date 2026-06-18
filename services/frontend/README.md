@@ -4,7 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 Start each frontend session from [`tasks/todo.md`](./tasks/todo.md). The full session rules live in [`tasks/workflow.md`](./tasks/workflow.md), and durable frontend corrections belong in [`tasks/lessons.md`](./tasks/lessons.md).
 
-Before UI work, read [`docs/user-flows.md`](./docs/user-flows.md) and [`docs/ui-ux-design-system.md`](./docs/ui-ux-design-system.md). The canonical MVP v2 architecture spec is [`../docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md`](../docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md).
+Before UI work, read [`docs/user-flows.md`](./docs/user-flows.md) and [`docs/ui-ux-design-system.md`](./docs/ui-ux-design-system.md). The canonical MVP v2 architecture spec is [`../docs/superpowers/specs/2026-05-13-courtsync-mvp-v2-design.md`](../docs/superpowers/specs/2026-05-13-courtsync-mvp-v2-design.md).
 
 ## Getting Started
 

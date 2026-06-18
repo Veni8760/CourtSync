@@ -3,13 +3,13 @@ name: session-end-status-md
 description: Update `tasks/todo.md` at the end of a working session on this repo so Daniel can pick the project back up days or weeks later from a single file. Use whenever the working session is wrapping up, the user signals they're done for the day, the user asks "where are we at" / "what did we do" / "wrap this up" / "save progress" / "save status", or whenever a Stop hook in this repo invokes this skill. Use even if the user has not explicitly named the file — the goal is to leave behind a clean handoff doc before context is lost.
 ---
 
-# Session-end status doc for VolleyIQ
+# Session-end status doc for CourtSync
 
 When a working session on this repo is ending, leave behind a clean handoff in `tasks/todo.md` at the repo root. The point of this doc is **future-Daniel coming back to the project after a gap** — days, sometimes weeks. He should be able to open one file and be caught up in under a minute.
 
 ## Why this matters
 
-Daniel is building VolleyIQ as a learning project — depth over speed. He'll context-switch in and out of it around school, sometimes with long gaps. Without a status doc, every comeback starts with "what was I doing again?" — re-reading transcripts, grepping git log, mentally reconstructing. With a status doc kept fresh, comeback time drops to reading one file.
+Daniel is building CourtSync as a learning project — depth over speed. He'll context-switch in and out of it around school, sometimes with long gaps. Without a status doc, every comeback starts with "what was I doing again?" — re-reading transcripts, grepping git log, mentally reconstructing. With a status doc kept fresh, comeback time drops to reading one file.
 
 The doc is also useful for *you* (Claude) at the start of a fresh session — it gives you a quick, structured read on the project state without having to re-derive it from scratch.
 

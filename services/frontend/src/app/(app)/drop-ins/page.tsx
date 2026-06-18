@@ -23,7 +23,7 @@ import { DropInApiError, listDropIns, type DropIn } from "@/lib/dropins"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Drop-ins | VolleyIQ",
+  title: "Drop-ins | CourtSync",
   description: "Browse and create volleyball drop-in sessions.",
 }
 

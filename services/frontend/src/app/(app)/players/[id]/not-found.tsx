@@ -7,7 +7,7 @@ export default function PlayerNotFound() {
     <ResourceNotFoundState
       badge="Player not found"
       title="Player profile unavailable"
-      description="This player profile is not in the current VolleyIQ mock roster."
+      description="This player profile is not in the current CourtSync mock roster."
       href="/leaderboard"
       cta="View leaderboard"
       icon={UserGroupIcon}

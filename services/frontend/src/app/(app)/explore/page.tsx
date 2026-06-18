@@ -21,8 +21,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCommunities } from "@/lib/mock-data"
 
 export const metadata: Metadata = {
-  title: "Explore | VolleyIQ",
-  description: "Discover VolleyIQ communities and independent pickup games.",
+  title: "Explore | CourtSync",
+  description: "Discover CourtSync communities and independent pickup games.",
 }
 
 export default function ExplorePage() {

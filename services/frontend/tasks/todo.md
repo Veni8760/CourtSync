@@ -1,4 +1,4 @@
-# VolleyIQ Frontend Todo
+# CourtSync Frontend Todo
 
 _Last updated: 2026-06-13_
 
@@ -93,7 +93,7 @@ has no transform-based entrance state, signed-out `/` and `/home` behave correct
 
 ## Historical - Frontend Slice 1: App Foundation
 
-**Scope:** Establish the frontend foundation for VolleyIQ's MVP shell: shadcn setup, zinc theme, app navigation, route skeletons, and a clear mock-data direction. No backend integration yet.
+**Scope:** Establish the frontend foundation for CourtSync's MVP shell: shadcn setup, zinc theme, app navigation, route skeletons, and a clear mock-data direction. No backend integration yet.
 
 **Done when:** The app has a coherent shadcn/zinc shell, the primary routes from `docs/user-flows.md` exist as skeleton pages, mock-data placement is decided, and lint/build or a recorded blocker confirms the scaffold is usable.
 

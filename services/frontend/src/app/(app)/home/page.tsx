@@ -30,8 +30,8 @@ import {
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Home | VolleyIQ",
-  description: "Manage your VolleyIQ drop-ins, communities, and players.",
+  title: "Home | CourtSync",
+  description: "Manage your CourtSync drop-ins, communities, and players.",
 }
 
 const dateFormatter = new Intl.DateTimeFormat("en-CA", {

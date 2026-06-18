@@ -1,4 +1,4 @@
-# VolleyIQ Frontend Workflow
+# CourtSync Frontend Workflow
 
 This workflow keeps frontend implementation state local to `frontend/`. Root `tasks/` remains for broad project status and backend/project-wide handoffs.
 
@@ -9,7 +9,7 @@ Read these before making product or UI decisions:
 1. [`tasks/todo.md`](./todo.md)
 2. [`docs/user-flows.md`](../docs/user-flows.md)
 3. [`docs/ui-ux-design-system.md`](../docs/ui-ux-design-system.md)
-4. [`../docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md`](../../docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md)
+4. [`../docs/superpowers/specs/2026-05-13-courtsync-mvp-v2-design.md`](../../docs/superpowers/specs/2026-05-13-courtsync-mvp-v2-design.md)
 
 Before writing Next.js route, layout, server component, metadata, action, form, navigation, or route handler code, read the relevant local Next.js 16 guide in `node_modules/next/dist/docs/`. The repo's `AGENTS.md` warns that this Next version may differ from older conventions.
 

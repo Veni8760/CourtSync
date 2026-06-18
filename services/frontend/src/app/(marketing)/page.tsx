@@ -10,7 +10,7 @@ import {
 } from "@/lib/mock-data"
 
 export const metadata: Metadata = {
-  title: "VolleyIQ | Volleyball drop-in management",
+  title: "CourtSync | Volleyball drop-in management",
   description:
     "Run volleyball drop-ins without spreadsheet chaos. Publish sessions, fill rosters, balance games, and track player profiles.",
 }

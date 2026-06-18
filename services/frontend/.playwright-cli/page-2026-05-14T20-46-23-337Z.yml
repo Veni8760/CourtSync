@@ -28,7 +28,7 @@
             - img
           - generic [ref=e159]:
             - generic [ref=e160]: No upcoming tournaments
-            - generic [ref=e161]: Tournament support is planned for a later VolleyIQ phase.
+            - generic [ref=e161]: Tournament support is planned for a later CourtSync phase.
   - button "Open Next.js Dev Tools" [ref=e150] [cursor=pointer]:
     - img [ref=e151]
   - alert [ref=e154]

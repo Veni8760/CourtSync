@@ -69,7 +69,7 @@ export default function Home() {
                   Run better volleyball drop-ins.
                 </h1>
                 <p className="max-w-2xl text-sm/relaxed text-muted-foreground sm:text-base/relaxed">
-                  VolleyIQ connects local communities, pickup hosts, and players
+                  CourtSync connects local communities, pickup hosts, and players
                   with signup flows, generated teams, game schedules, and ELO
                   profiles.
                 </p>
