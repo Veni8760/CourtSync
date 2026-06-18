@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-18_
+_Last updated: 2026-06-18 (evening — Phase 5 filters merged)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -216,6 +216,12 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   `/drop-ins/near-me` (client `navigator.geolocation` → server action → gateway) renders nearest-first
   cards; "Near me" link added to the drop-ins page. **Verified live:** create → ES doc carries
   title/price/skill → search returns them → Redis key `nearby-dropins::…` populated. Frontend builds.
+- **Search Phase 5 — filters (merged, PR #16):** `GET /api/search/drop-ins` now takes optional
+  `skill`, `maxPrice`, `from`, `to` (ISO-8601). New `NearbyFilters` param object; filters applied
+  in-app on the already-small geo-bounded set (consistent with the existing in-app distance sort);
+  `@Cacheable` key extended with the filter values. Frontend near-me page gained a skill dropdown +
+  max-price input that re-query on change (date-window wired through the API, no picker UI yet).
+  Unit test asserts each filter narrows; search-service tests + frontend build green.
 
 ## What's unfinished / open questions
 - [ ] **Live end-to-end test not done by Daniel yet:** sign in (keeping email confirmation ON —
@@ -240,23 +246,25 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## What's next (one finishable chunk) — Search Phase 5: layer filters onto geo-search
-Phases 1–4 (location → ES read model → geo query → "near me" UI + Redis) are done. Phase 5
-adds the easy filters on top of the radius: skill / maxPrice / date-window / free-only. The
-fields already live on `DropInDocument` (title/price/skillLevel/startTime), so this is mostly
-query + params, no new event work.
+## What's next (one finishable chunk) — Search Phase 6: keyword/title full-text search
+The geo + filter search is done; the one ES capability not yet exercised is its actual strength —
+**full-text**. Add an optional `q` that matches drop-in `title` (already a `text` field, analyzed).
+This is the most resume-defensible next step ("why Elasticsearch and not Postgres?" → full-text
+relevance, not just geo).
 
-**Done when** `GET /api/search/drop-ins?lat&lng&radiusKm&skill=&maxPrice=&from=&to=` narrows the
-results by those filters (combined with the geo radius), with a test proving each filter narrows.
+**Done when** `GET /api/search/drop-ins?lat&lng&radiusKm&q=smash` returns only drop-ins whose title
+matches `smash`, combined with the geo radius, with a test proving it narrows.
 
-- [ ] `DropInSearchService` / repository: add optional skill / maxPrice / date-range filters to the
-      ES query (combine with the existing geo_distance — a bool query, or post-filter the small set)
-- [ ] `SearchController`: accept the optional `@RequestParam`s
-- [ ] frontend `/drop-ins/near-me`: simple filter controls (native `<select>`/`<input>`), pass through
-- [ ] test: two docs differing in skill/price; assert each filter narrows correctly
-- [ ] cache key must include the filters (extend the `@Cacheable` key)
+- [ ] Switch `findNearby` from the derived `findByLocationNear` to a native ES query (geo_distance
+      filter + a `match` on `title` when `q` present) — or post-filter, but a `match` query is the
+      point here (relevance scoring), so do it in ES
+- [ ] `SearchController`: optional `@RequestParam q`; thread through `NearbyFilters` (add `q`)
+- [ ] frontend near-me: a search box that re-queries on submit
+- [ ] test: two docs with different titles; assert `q` narrows to the match
+- [ ] extend the `@Cacheable` key with `q`
 
 Out of scope (parked):
+- Date-window **picker UI** on the near-me page (the API already accepts `from`/`to`)
 - Re-run the **RSVP → notification** e2e (RSVP_CREATED → notification-service logs) — separate event flow, not yet runtime-verified this session
 - Clean up the test courts/drop-ins left in hosted DB + ES (no DELETE endpoints; clear directly)
 Other parked items:
