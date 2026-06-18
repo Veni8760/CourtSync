@@ -26,6 +26,12 @@ spring:
                 - Path=/api/drop-ins,/api/drop-ins/**
               filters:
                 - StripPrefix=1
+            - id: search-service
+              uri: ${SEARCH_SERVICE_URL:http://localhost:8087}
+              predicates:
+                - Path=/api/search,/api/search/**
+              filters:
+                - StripPrefix=1
 
 server:
   port: ${SERVER_PORT:8080}

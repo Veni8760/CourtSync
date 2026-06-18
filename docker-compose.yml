@@ -105,6 +105,7 @@ services:
       COURT_SERVICE_URL: http://court-service:8082
       DROPIN_SERVICE_URL: http://dropin-service:8083
       NOTIFICATION_SERVICE_URL: http://notification-service:8086
+      SEARCH_SERVICE_URL: http://search-service:8087
 
   user-service:
     build: ./services/user-service
@@ -181,6 +182,7 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      SUPABASE_AUTH_ISSUER: ${SUPABASE_AUTH_ISSUER:-https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
     depends_on:
       kafka:
         condition: service_healthy
