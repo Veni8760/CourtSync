@@ -5,6 +5,7 @@ import {
   SearchApiError,
   searchNearbyDropIns,
   type NearbyDropIn,
+  type NearbyFilters,
 } from "@/lib/search"
 
 export type NearbySearchState =
@@ -17,11 +18,12 @@ export type NearbySearchState =
 export async function findNearby(
   lat: number,
   lng: number,
-  radiusKm: number
+  radiusKm: number,
+  filters: NearbyFilters = {}
 ): Promise<NearbySearchState> {
   await requireUser()
   try {
-    const results = await searchNearbyDropIns(lat, lng, radiusKm)
+    const results = await searchNearbyDropIns(lat, lng, radiusKm, filters)
     return { status: "ok", results }
   } catch (error) {
     return {
