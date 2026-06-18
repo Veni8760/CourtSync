@@ -53,13 +53,6 @@ export function SignupForm({
             <FieldError>{state.error}</FieldError>
           </Field>
         ) : null}
-        {state.message ? (
-          <Field>
-            <FieldDescription className="text-center">
-              {state.message}
-            </FieldDescription>
-          </Field>
-        ) : null}
         <Field>
           <FieldLabel htmlFor="fullName">Full name</FieldLabel>
           <Input

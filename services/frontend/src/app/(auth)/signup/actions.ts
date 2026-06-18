@@ -48,7 +48,9 @@ export async function signup(
 
   const accessToken = data.session?.access_token
   if (!accessToken) {
-    return { message: "Check your email to confirm your account, then sign in." }
+    // Email confirmation is on: no session yet. Send them to a clear
+    // "check your email" screen instead of leaving them on the filled-in form.
+    redirect(`/signup/check-email?email=${encodeURIComponent(email)}`)
   }
 
   try {
