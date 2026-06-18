@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: court-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require&currentSchema=courts}
+    username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${SUPABASE_DB_PASSWORD:}}
+  jpa:
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks the entity matches the
+      # migrated tables at boot (fails fast on drift) — it never alters the DB.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: courts
+  flyway:
+    enabled: true
+    schemas: courts
+    default-schema: courts
+    # Hosted Supabase was seeded before Flyway first ran there. This lets Flyway
+    # adopt the existing V1-equivalent schema, then apply future V2+ migrations.
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  # Spring gRPC server: runs on its OWN HTTP/2 port, alongside the REST server below.
+  # This is the synchronous court-lookup API other services (dropin-service) call.
+  grpc:
+    server:
+      port: ${COURT_GRPC_PORT:9090}
+
+server:
+  port: ${SERVER_PORT:8082}

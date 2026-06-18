@@ -18,7 +18,7 @@ microservices* — favor depth, correctness, and idiomatic patterns over speed.
 
 First goal is a clean microservices **skeleton** with one end-to-end flow:
 create court → create drop-in → view → RSVP → publish `RSVP_CREATED` to Kafka → consumed +
-logged by the Go notification-service. See MASTER.md §20 for the
+logged by the Go notification-service and the search-service. See MASTER.md §20 for the
 milestone definition.
 
 ## Architecture
@@ -29,16 +29,9 @@ Polyglot microservices behind an API gateway, async via Kafka, all run with Dock
 Next.js frontend → API Gateway (Spring Cloud Gateway) → REST → domain services → Kafka (async)
 ```
 
-Services (`services/`) — **target model** (canonical: `MASTER.md` + `docs/schema/courtsync.dbml`):
-`api-gateway`, `user-service`, `community-service`, `facility-service`, `dropin-service`,
-`booking-service` (all **Java Spring Boot**, Maven), plus `notification-service` (**Go** — Kafka
-consumer + `/health`). `frontend/` is Next.js. `payment-service` is Phase 4; `search-service` and
-`messaging-service` are deferred — all three are regenerated when their phase starts, not kept as
-empty skeletons.
-**In flight (Story B realignment — see `tasks/todo.md`):** `court-service` is being evolved into
-`facility-service` (facilities + spaces + reservations); RSVP is being extracted out of
-`dropin-service` into the new `booking-service`. As of now the repo still has `court-service` and
-`dropin-service`; `community-service` and `booking-service` do not exist yet.
+Services (`services/`): `api-gateway`, `user-service`, `court-service`, `dropin-service`,
+`messaging-service`, `payment-service`, `search-service` (all **Java Spring Boot**, Maven),
+plus `notification-service` (**Go** — Kafka consumer + `/health`). `frontend/` is Next.js.
 Infra: hosted Supabase Postgres, local Kafka (KRaft, no Zookeeper), Redis. Later: Elasticsearch, k8s, Rust analytics.
 
 Key rules (from MASTER.md):
@@ -132,10 +125,8 @@ Every REST error is an **RFC 9457 ProblemDetail** (`application/problem+json`), 
 
 - **Frontend**: Next.js + TypeScript + Tailwind + shadcn/ui + TanStack Query. pnpm. Port 3000.
 - **Java services**: Java 21 (toolchain Java 26 ok) + Spring Boot 4.0.x (Spring Framework 7) +
-  **Maven** (`./mvnw`). **Target port map** (MASTER): gateway 8080, user 8081, community 8082,
-  facility 8083, dropin 8084, booking 8085, notification 8086, payment 8087, search 8088.
-  Ports are renumbered to this as each service is renamed/created (see `tasks/todo.md` Phases B–D);
-  until then the built services keep their current ports (court 8082, dropin 8083). Boot-4 specifics that bit us
+  **Maven** (`./mvnw`). Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083,
+  messaging 8084, payment 8085, notification 8086, search 8087). Boot-4 specifics that bit us
   during the 3.5→4.0 migration: autoconfig is modular, so Kafka needs
   `spring-boot-starter-kafka` (the raw `spring-kafka` artifact no longer triggers
   autoconfiguration); the default JSON mapper is **Jackson 3** (`tools.jackson.*`, unchecked

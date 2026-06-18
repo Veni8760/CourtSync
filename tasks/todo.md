@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-18_
+_Last updated: 2026-06-13_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -13,60 +13,7 @@ historical.
 
 ---
 
-## 🔭 ACTIVE: Implement the new data model (Story B realignment)
-
-**Decision (2026-06-18):** the DBML (`docs/schema/courtsync.dbml`) + `MASTER.md` are the
-canonical model. The built code, `docker-compose.yml`, and `CLAUDE.md` lagged on the old
-court/dropin/messaging/search skeleton. This is **not a redesign** — it's making the
-implementation catch up to the spec that's already canonical.
-
-Service map (target):
-
-| Service | Action |
-|---|---|
-| user-service | keep (done) |
-| court-service | evolve → **facility-service** (facilities + spaces + reservations) |
-| dropin-service | split: keep drop-ins, extract RSVP out |
-| community-service | create (new) |
-| booking-service | create (new — holds extracted RSVP + waitlist) |
-| notification-service (Go) | keep |
-| api-gateway | keep, rewire routes/ports |
-| messaging / search / payment | **scrap now**, regenerate at their phase |
-
-Ports stay put until each service's phase renames/creates it (no premature renumbering).
-Target map (MASTER): community 8082, facility 8083, dropin 8084, booking 8085, notif 8086, payment 8087.
-
-Schema fix already applied (2026-06-18): `drop_ins` MEMBERS_ONLY ⇒ `community_id NOT NULL` CHECK in the DBML.
-
-### Phase A — Realign repo (config/docs, non-breaking)  ← DONE (2026-06-18)
-- [x] Delete dead skeletons: `messaging-service`, `search-service`, `payment-service`
-- [x] `docker-compose.yml`: removed those 3 services + their gateway env vars
-- [x] `CLAUDE.md`: fixed service list + port table; noted court→facility / +community / +booking in flight
-- [x] `docker compose config` validates (COMPOSE_OK; declares user/court/dropin/notification/gateway + infra)
-- [x] Cleaned stale refs: `.env.example` URLs, `DropinEvents.java` comment
-
-### Phase B — court-service → facility-service
-Rename service + package; grow `courts` → facilities + spaces + availability + pricing (Flyway Vs);
-`court.proto` → `facility.proto` (`GetSpace`); dropin gRPC client points at facility. Renumber facility→8083.
-
-### Phase C — community-service (new, greenfield slice)
-communities + members + join_requests; REST CRUD; gateway `/api/communities`; frontend. Refs `users` only. Port 8082.
-
-### Phase D — booking-service + extract RSVP (the meaty one)
-New service: bookings + waitlist_entries + booking_status_history. Delete `drop_in_players` from dropin;
-dropin keeps the `confirmed_players` counter and **exposes** ReserveSlot/ReleaseSlot gRPC (server), booking is the client.
-Wire the `space_reservations` hold saga (dropin↔facility). Ports: dropin→8084, booking→8085.
-
-### Phase E — reliability + event topics
-`outbox` per producer (community/facility/dropin/booking) + `processed_events` on notification;
-migrate `dropin-events` → `community-events` / `facility-events` / `booking-events` (MASTER §9).
-
-### Later
-payment-service (Phase 4, regenerate), then search/messaging regenerated on demand.
-
----
-
-## The big plan — historical skeleton build (Phases 0–3, DONE; superseded by realignment above)
+## The big plan (from MASTER.md §27 build order)
 
 Grouped into phases. We do them in order; each phase should leave the repo runnable.
 
@@ -260,19 +207,21 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
 
 ## What's next (one finishable chunk)
-**Superseded by the realignment plan at the top.** Active chunk = **Phase A** (delete the dead
-skeletons; clean `docker-compose.yml` + `CLAUDE.md`; `docker compose config` validates). Then
-**Phase B** (court-service → facility-service). NOTE: the old "build messaging + payment
-placeholders" task is reversed — those skeletons are being scrapped and regenerated at their phase.
+First finish the active **real landing page + clean app routing** slice:
+rerun `pnpm lint` and `pnpm build` after the final mobile/reduced-motion tweaks, finish reduced
+motion QA, then verify signed-in `/` → `/home`, signed-in `/home`, and sign-out → `/` with a
+real Supabase session.
 
-Still-relevant frontend follow-up (independent of the realignment): finish the **real landing
-page + clean app routing** slice — rerun `pnpm lint`/`pnpm build` after the mobile/reduced-motion
-tweaks, finish reduced-motion QA, verify signed-in `/` → `/home` and sign-out → `/` with a real
-Supabase session.
+**Open a PR for `feature/global-exception-handler` and merge it** (PR #3 for the user vertical
+is already merged), then the last Phase 3 slice: **messaging + payment placeholder services** —
+each gets its Flyway V1 (per the hardened DBML), an empty feature package skeleton, and stays
+bootable. **Done when** the full `docker compose up` stack is healthy with all services
+validating their schemas.
 
 Out of scope (parked):
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
 - MASTER.md §8.6/§10.3 still say "Booking acquires a row lock on drop_ins.confirmed_players" —
-  contradicts the decided ReserveSlot/ReleaseSlot gRPC design; reconcile during Phase D
+  contradicts the decided ReserveSlot/ReleaseSlot gRPC design; reconcile in a MASTER edit
 - Phase 2 deferred: migrate Kafka event payloads from JSON to Protobuf (touches Go + search + TS)
+- Phase 3 rest: messaging/payment placeholders, cross-cutting error handling
 - Later: auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics

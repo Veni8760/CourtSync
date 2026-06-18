@@ -276,8 +276,6 @@ Table drop_ins [note: 'dropin-service :8084'] {
   //   CHECK (facility_id IS NOT NULL OR location_name IS NOT NULL)
   //   -- a space implies its facility
   //   CHECK (space_id IS NULL OR facility_id IS NOT NULL)
-  //   -- MEMBERS_ONLY is meaningless without a community to scope visibility to
-  //   CHECK (visibility <> 'MEMBERS_ONLY' OR community_id IS NOT NULL)
   //   -- confirm_by only makes sense if there is a real minimum to hit,
   //   -- and must precede the start
   //   CHECK (confirm_by IS NULL OR confirm_by < start_time)
