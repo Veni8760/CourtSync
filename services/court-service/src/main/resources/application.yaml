@@ -1,6 +1,15 @@
 spring:
   application:
     name: court-service
+  # spring-grpc auto-secures the gRPC server once this service is an OAuth2 resource
+  # server (issuer-uri below), which would force internal dropin->court gRPC calls to
+  # carry a user JWT and fail with UNAUTHENTICATED. The gRPC port (9090) is internal,
+  # trusted on the compose network, so disable gRPC security autoconfig here. REST
+  # (8082) stays protected by the servlet SecurityConfig — a separate filter chain.
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.grpc.server.autoconfigure.security.GrpcSecurityAutoConfiguration
+      - org.springframework.boot.grpc.server.autoconfigure.security.OAuth2ResourceServerAutoConfiguration
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require&currentSchema=courts}
     username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres}}
