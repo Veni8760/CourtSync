@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-12_
+_Last updated: 2026-06-13_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -133,13 +133,54 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - [x] **fix(flyway): Boot 4 needs `spring-boot-starter-flyway`** — raw flyway-core silently
   stopped running migrations after the 3.5→4.0 migration; swapped in all 5 DB-backed poms;
   court+dropin rebuilt and re-validated their existing schema history clean.
-- [ ] messaging/payment placeholders, cross-cutting error handling, validation, logging
+- [x] **GlobalExceptionHandler (DONE 2026-06-12, branch `feature/global-exception-handler`):**
+  RFC 9457 ProblemDetail (`application/problem+json`) across court+dropin+user via
+  `common/GlobalExceptionHandler extends ResponseEntityExceptionHandler`. Generic
+  `@ResponseStatus`-reading handler (new exceptions need zero handler changes), validation
+  400s carry `errors:{field→msg}`, 500s never leak internals. Frontend `getErrorMessage`
+  reads `detail`. Convention documented in CLAUDE.md. Curl-verified every error path incl.
+  gRPC-translated court-not-found and duplicate RSVP; happy paths unchanged.
+- [x] **Story B cleanup (2026-06-18):** deleted the empty `messaging-service`,
+  `payment-service`, `search-service` skeletons (bloat — never implemented). Stripped them from
+  `docker-compose.yml`, `.env.example`, `infra/postgres/init.sql`, and the DropinEvents comment.
+  `docker compose config` validates. They live in the MASTER.md vision; re-add when a real flow
+  needs them. (Note: the earlier `feeb09a "clean up"` commit nuked the *whole* backend and was
+  reverted — this is the surgical version.)
+- [ ] remaining cross-cutting polish
 
 ### Later (NOT in skeleton): auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics.
 
 ---
 
-## What we did this session (2026-06-12)
+## What we did this session (2026-06-12 to 2026-06-13)
+- **Done: frontend hero Motion polish** — added a narrow client component for the home
+  hero, preserve the current visual layout, animate only the intro copy/CTA and metrics row,
+  respect reduced motion, then verified with frontend lint/build and visual checks.
+- **Done: signed-out landing behavior** — made the shared header auth-aware so signed-out
+  users see `Sign in` instead of `Host`, added a Supabase sign-out action that clears the
+  session and redirects to `/`, and made `/` render only the hero landing for signed-out
+  visitors while signed-in users keep the full home content.
+- **In progress: real landing page + clean app routing** — split `/` into a true public
+  marketing route and moved the signed-in dashboard to `/home`:
+  - Added `src/app/(marketing)/page.tsx`; signed-in users redirect from `/` to `/home`.
+  - Added `src/app/(app)/home/page.tsx`; signed-out users redirect from `/home` to `/login`.
+  - Deleted the conflicting `src/app/page.tsx` root page.
+  - Added `src/lib/auth.ts` shared server auth helper and updated the app header to link brand
+    to `/home` when signed in, `/` when signed out.
+  - Added marketing components under `src/components/marketing/` plus
+    `src/components/layout/marketing-header.tsx`.
+  - Updated login, signup, and auth-confirm success redirects to `/home`; sign-out remains `/`.
+- **Verification so far for landing/routing slice:**
+  - `pnpm lint` passed before final mobile/reduced-motion tweaks.
+  - `pnpm build` passed before final mobile/reduced-motion tweaks; Next route output included
+    both dynamic `/` and `/home` with no route conflict.
+  - Browser smoke checked signed-out `/` rendering the marketing page first, primary CTA
+    navigating to `/explore`, and signed-out `/home` redirecting to `/login`.
+  - Desktop and mobile visual checks were performed; mobile preview was compacted so the next
+    section is visible in the first viewport.
+  - Follow-up still needed: rerun `pnpm lint` + `pnpm build` after final tweaks, finish reduced
+    motion QA, and verify signed-in `/` → `/home` plus sign-out → `/` with a real authenticated
+    Supabase session.
 - **Normalized the DBML schema** (`docs/schema/courtsync.dbml`): 3NF pass with documented
   intentional denormalizations, CHECKs for every invariant, partial uniques (re-book after
   cancel, one live reservation/payment per ref), deferrable waitlist position unique,
@@ -151,6 +192,10 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - **Found + fixed a silent Boot 4 regression**: Flyway hadn't been running since the 3.5→4.0
   migration (`flyway-core` doesn't autoconfigure on Boot 4 — needs `spring-boot-starter-flyway`).
   Swapped in all 5 DB-backed poms; rebuilt court+dropin to confirm clean history validation.
+- **Merged PR #3** (user vertical + Flyway fix + schema docs), then built the
+  **GlobalExceptionHandler chunk**: RFC 9457 ProblemDetail everywhere, annotation-driven
+  generic handler, field-level validation errors, leak-proof 500s, frontend `detail` parsing,
+  CLAUDE.md convention. Verified live: 7 error paths + happy paths through the gateway.
 
 ## Previous session (2026-06-11)
 - Built the **Phase 2 drop-in frontend vertical** via subagent-driven-development (8 tasks + two-stage review each), all UI from shadcn registry components (no hand-written primitives). Locked decisions: real-but-simpler pages (replacing the abandoned VolleyIQ mock) + stable per-browser dev identity.
@@ -168,10 +213,16 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
 
 ## What's next (one finishable chunk)
-**Open a PR for `feature/user-service-vertical` and merge it**, then pick the next Phase 3
-slice: a **GlobalExceptionHandler** (`common/`) for court+dropin+user — consistent JSON error
-bodies for 400/404/409 instead of Spring's defaults. **Done when** all three services return
-the same error shape (curl-verified) and the pattern is documented in CLAUDE.md.
+First finish the active **real landing page + clean app routing** slice:
+rerun `pnpm lint` and `pnpm build` after the final mobile/reduced-motion tweaks, finish reduced
+motion QA, then verify signed-in `/` → `/home`, signed-in `/home`, and sign-out → `/` with a
+real Supabase session.
+
+**Open a PR for `feature/global-exception-handler` and merge it** (PR #3 for the user vertical
+is already merged). It now also carries the Story B cleanup (deleted messaging/payment/search).
+Skeleton is now minimal: gateway, user, court, dropin (Java) + notification (Go) + frontend.
+**Done when** the full `docker compose up` stack is healthy with all DB-backed services
+validating their schemas. Build new services back only when a real end-to-end flow needs one.
 
 Out of scope (parked):
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)

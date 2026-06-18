@@ -2,6 +2,7 @@ package com.courtsync.users.user.dto;
 
 import com.courtsync.users.user.domain.SkillLevel;
 import com.courtsync.users.user.domain.User;
+import com.courtsync.users.user.domain.UserRole;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -12,6 +13,7 @@ public record UserResponse(
         String firstName,
         String lastName,
         SkillLevel skillLevel,
+        UserRole role,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -22,6 +24,7 @@ public record UserResponse(
                 u.getFirstName(),
                 u.getLastName(),
                 u.getSkillLevel(),
+                u.getRole(),
                 u.getCreatedAt(),
                 u.getUpdatedAt());
     }

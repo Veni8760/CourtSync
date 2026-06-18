@@ -87,10 +87,7 @@ services:
       USER_SERVICE_URL: http://user-service:8081
       COURT_SERVICE_URL: http://court-service:8082
       DROPIN_SERVICE_URL: http://dropin-service:8083
-      MESSAGING_SERVICE_URL: http://messaging-service:8084
-      PAYMENT_SERVICE_URL: http://payment-service:8085
       NOTIFICATION_SERVICE_URL: http://notification-service:8086
-      SEARCH_SERVICE_URL: http://search-service:8087
 
   user-service:
     build: ./services/user-service
@@ -100,6 +97,7 @@ services:
       SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=users
       SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
+      SUPABASE_AUTH_ISSUER: ${SUPABASE_AUTH_ISSUER:-https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
       kafka:
@@ -148,46 +146,10 @@ services:
       court-service:
         condition: service_started
 
-  messaging-service:
-    build: ./services/messaging-service
-    ports:
-      - "8084:8084"
-    environment:
-      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=messages
-      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-
-  payment-service:
-    build: ./services/payment-service
-    ports:
-      - "8085:8085"
-    environment:
-      SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=payments
-      SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SUPABASE_DB_PASSWORD:?Set SUPABASE_DB_PASSWORD in .env or your shell}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-
   notification-service:
     build: ./services/notification-service
     ports:
       - "8086:8086"
-    environment:
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    depends_on:
-      kafka:
-        condition: service_healthy
-
-  search-service:
-    build: ./services/search-service
-    ports:
-      - "8087:8087"
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
@@ -204,6 +166,8 @@ services:
     environment:
       COURTSYNC_API_BASE_URL: ${COURTSYNC_API_BASE_URL:-http://api-gateway:8080/api}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8080/api}
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-https://aeojyhopmxgtzedqughe.supabase.co}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
     depends_on:
       - api-gateway
 

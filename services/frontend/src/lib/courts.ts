@@ -115,8 +115,18 @@ async function getErrorMessage(response: Response) {
   const fallback = `Court API request failed with ${response.status}`
 
   try {
-    const body = (await response.json()) as { message?: unknown; error?: unknown }
-    const message = typeof body.message === "string" ? body.message : body.error
+    const body = (await response.json()) as {
+      detail?: unknown
+      message?: unknown
+      error?: unknown
+    }
+    // Backends return RFC 9457 problem+json (detail); message/error cover legacy shapes.
+    const message =
+      typeof body.detail === "string"
+        ? body.detail
+        : typeof body.message === "string"
+          ? body.message
+          : body.error
 
     return typeof message === "string" ? message : fallback
   } catch {
