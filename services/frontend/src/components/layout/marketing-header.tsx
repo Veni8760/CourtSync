@@ -20,7 +20,7 @@ export function MarketingHeader() {
             <HugeiconsIcon icon={VolleyballIcon} />
           </span>
           <span className="truncate font-heading text-sm font-semibold">
-            VolleyIQ
+            CourtSync
           </span>
         </Link>
 

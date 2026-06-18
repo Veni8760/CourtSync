@@ -29,7 +29,7 @@ export default async function CheckEmailPage({
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <HugeiconsIcon icon={VolleyballIcon} strokeWidth={2} />
             </div>
-            VolleyIQ
+            CourtSync
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">

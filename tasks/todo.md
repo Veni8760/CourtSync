@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-13_
+_Last updated: 2026-06-18_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -8,7 +8,7 @@ per-session handoff (done / unfinished / next).
 CourtSync pivoted from the old Spring-Modulith monolith design to a **polyglot
 microservices** skeleton (Java Spring Boot services + one Go notification worker, Kafka,
 Redis, hosted Supabase Postgres, Next.js frontend, all orchestrated locally via Docker
-Compose). The old `volleyiq_mvp_design_document.md` and the previous CLAUDE.md content are
+Compose). The old `courtsync_mvp_design_document.md` and the previous CLAUDE.md content are
 historical.
 
 ---
@@ -119,7 +119,7 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 - [x] `lib/dropins.ts` data layer (list/get/create/rsvp/cancel) + `getCourt` in `lib/courts.ts`
 - [x] `lib/dev-identity.ts` — stable per-browser dev UUID (`useSyncExternalStore`), stands in for auth
 - [x] `/drop-ins` list, `/drop-ins/create` (server action + Zod), `/drop-ins/[id]` detail + RSVP/cancel (server actions, revalidatePath), loading + not-found
-- [x] Deleted abandoned VolleyIQ mock cruft (signup-form, session-card, signup/success routes)
+- [x] Deleted abandoned CourtSync mock cruft (signup-form, session-card, signup/success routes)
 - [x] Verified: `pnpm lint` + `pnpm build` green; live route smoke tests pass
 - [x] Final holistic review: fixed site-header Host link `/drop-ins/new`→`/drop-ins/create`, cancel-RSVP 404 copy, loading copy
 - [x] Runtime boot against hosted Supabase verified (full stack up; see below)
@@ -152,82 +152,62 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 
 ---
 
-## What we did this session (2026-06-12 to 2026-06-13)
-- **Done: frontend hero Motion polish** — added a narrow client component for the home
-  hero, preserve the current visual layout, animate only the intro copy/CTA and metrics row,
-  respect reduced motion, then verified with frontend lint/build and visual checks.
-- **Done: signed-out landing behavior** — made the shared header auth-aware so signed-out
-  users see `Sign in` instead of `Host`, added a Supabase sign-out action that clears the
-  session and redirects to `/`, and made `/` render only the hero landing for signed-out
-  visitors while signed-in users keep the full home content.
-- **In progress: real landing page + clean app routing** — split `/` into a true public
-  marketing route and moved the signed-in dashboard to `/home`:
-  - Added `src/app/(marketing)/page.tsx`; signed-in users redirect from `/` to `/home`.
-  - Added `src/app/(app)/home/page.tsx`; signed-out users redirect from `/home` to `/login`.
-  - Deleted the conflicting `src/app/page.tsx` root page.
-  - Added `src/lib/auth.ts` shared server auth helper and updated the app header to link brand
-    to `/home` when signed in, `/` when signed out.
-  - Added marketing components under `src/components/marketing/` plus
-    `src/components/layout/marketing-header.tsx`.
-  - Updated login, signup, and auth-confirm success redirects to `/home`; sign-out remains `/`.
-- **Verification so far for landing/routing slice:**
-  - `pnpm lint` passed before final mobile/reduced-motion tweaks.
-  - `pnpm build` passed before final mobile/reduced-motion tweaks; Next route output included
-    both dynamic `/` and `/home` with no route conflict.
-  - Browser smoke checked signed-out `/` rendering the marketing page first, primary CTA
-    navigating to `/explore`, and signed-out `/home` redirecting to `/login`.
-  - Desktop and mobile visual checks were performed; mobile preview was compacted so the next
-    section is visible in the first viewport.
-  - Follow-up still needed: rerun `pnpm lint` + `pnpm build` after final tweaks, finish reduced
-    motion QA, and verify signed-in `/` → `/home` plus sign-out → `/` with a real authenticated
-    Supabase session.
-- **Normalized the DBML schema** (`docs/schema/courtsync.dbml`): 3NF pass with documented
-  intentional denormalizations, CHECKs for every invariant, partial uniques (re-book after
-  cancel, one live reservation/payment per ref), deferrable waitlist position unique,
-  single-source-of-truth waitlist (dropped WAITLISTED from bookings.status), currency on
-  drop_ins.price, ISO-4217 everywhere.
-- **Built the Phase 3 user-service vertical** (branch `feature/user-service-vertical`,
-  3 commits): Flyway V1 (timestamptz convention), full feature package, 409-on-duplicate-email,
-  gateway route. Verified live: 201/200/409/404/400 through the gateway.
-- **Found + fixed a silent Boot 4 regression**: Flyway hadn't been running since the 3.5→4.0
-  migration (`flyway-core` doesn't autoconfigure on Boot 4 — needs `spring-boot-starter-flyway`).
-  Swapped in all 5 DB-backed poms; rebuilt court+dropin to confirm clean history validation.
-- **Merged PR #3** (user vertical + Flyway fix + schema docs), then built the
-  **GlobalExceptionHandler chunk**: RFC 9457 ProblemDetail everywhere, annotation-driven
-  generic handler, field-level validation errors, leak-proof 500s, frontend `detail` parsing,
-  CLAUDE.md convention. Verified live: 7 error paths + happy paths through the gateway.
-
-## Previous session (2026-06-11)
-- Built the **Phase 2 drop-in frontend vertical** via subagent-driven-development (8 tasks + two-stage review each), all UI from shadcn registry components (no hand-written primitives). Locked decisions: real-but-simpler pages (replacing the abandoned VolleyIQ mock) + stable per-browser dev identity.
-- Files: `lib/dropins.ts`, `getCourt` in `lib/courts.ts`, `lib/dev-identity.ts` (`useSyncExternalStore`), components (drop-in card, create form, rsvp panel, dev-player badge), routes (list, create, detail, loading, not-found) with server actions for create/rsvp/cancel. Deleted mock signup/checkout cruft.
-- Final holistic review caught + fixed a blocker (site-header "Host" linked to deleted `/drop-ins/new` → `/drop-ins/create`) plus 2 minor copy fixes. `pnpm lint` + `pnpm build` green; live smoke tests pass.
-- **Opened PR #2** (`feature/dropin-rsvp-kafka` → `main`): https://github.com/Veni8760/CourtSync/pull/2 — bundles dropin+RSVP (gRPC+Kafka), the Boot 4 migration, and the frontend. 14 commits, 97 files.
-- Stripped the `Co-Authored-By: Claude` trailer from 6 older commits (`filter-branch` + `--force-with-lease`, `c8d4a22`→`fd44d61`) and removed the attribution footer from the PR. Recorded the no-attribution rule in memory + global `~/.claude/CLAUDE.md`.
+## What we did this session (2026-06-18)
+- **Story B cleanup (merged, PR #4):** deleted the empty `messaging`/`payment`/`search`
+  service skeletons (bloat) + their refs in `docker-compose.yml`, `.env.example`,
+  `infra/postgres/init.sql`, DropinEvents comment. Skeleton is now gateway · user · court ·
+  dropin (Java) + notification (Go) + frontend. (The earlier `feeb09a` "clean up" had nuked
+  the *whole* backend and was reverted — this was the surgical redo.)
+- **Per-service Supabase JWT auth (merged, PRs #4/#5/#6):** all three Java services
+  (user/court/dropin) are now OAuth2 resource servers validating the Supabase JWT.
+  Each has `spring-boot-starter-oauth2-resource-server`, a `config/SecurityConfig.java`
+  (stateless, `/health`+actuator public, `anyRequest().authenticated()`, `jwt()`),
+  `issuer-uri` in yaml, and a `*ControllerSecurityTests` (401 anon / 200 with jwt).
+  Decision: per-service validation, NOT centralized at the gateway. See `project_auth_state` memory.
+- **Identity from JWT (dropin-service):** `common/JwtPrincipal.userId(jwt)` reads `sub`;
+  RSVP + drop-in create take the user from the token, not the body. Deleted `CreateRsvpRequest`,
+  removed `organizerUserId` from `CreateDropInRequest`, cancel is now `DELETE /drop-ins/{id}/rsvp`.
+- **Frontend token wiring (merged, PR #6):** `lib/auth.ts` gained `requireUser()` +
+  `getAccessToken()`; `lib/{courts,dropins}.ts` attach `Authorization: Bearer <token>`;
+  protected pages/actions call `requireUser()` → redirect `/login`. Deleted the dev-identity
+  UUID stand-in (`lib/dev-identity.ts`, `dev-player-badge.tsx`). Moved shared form constants to
+  client-safe `lib/form-options.ts` to fix a `next/headers`-in-client-bundle build error.
+- **Stack verified live:** `docker compose up -d --build` healthy; all `/health` UP;
+  gateway returns **401** for unauthenticated `/api/courts`, `/api/drop-ins`, `/api/users/me`.
+- **Signup UX (UNCOMMITTED — see below):** added a dedicated `/signup/check-email` page
+  (shadcn `Empty`) and changed `signup` action to `redirect()` there when email confirmation
+  is required, instead of leaving the user on the filled form. `pnpm build` + live render pass.
 
 ## What's unfinished / open questions
-- **PR #2 is open and unmerged** — review/merge it (or keep iterating on the branch) before starting Phase 3.
-- The Docker `frontend` container is built from old code — `docker compose up -d --build frontend` to make the *stack* serve the new drop-in UI (the code itself is committed + verified).
-- Kafka image choice — using apache/kafka KRaft single-broker (no Zookeeper)
-- Hosted Supabase DB password must be set in local `.env` as `SUPABASE_DB_PASSWORD`
-- Benign log noise: dropin warns "Spring Data Redis could not identify store assignment" for the JPA repos (Redis repo-scanning); harmless, silence later by scoping Redis repositories.
-- `courts.courts` currently has RLS disabled. Fine for backend-only JDBC during the skeleton; revisit before any Supabase Data API / client-side access.
+- [ ] **Signup-UX change is uncommitted** on the working tree (no branch): new
+  `app/(auth)/signup/check-email/page.tsx` + edited `signup/actions.ts`. Pending Daniel's
+  visual test, then commit→push→merge (no self-attribution). Dead `state.message` slot in
+  `signup-form.tsx` can be pruned then too.
+- [ ] **Live end-to-end test not done by Daniel yet:** sign in (confirm email OR disable
+  confirmation in Supabase dashboard → Auth → Email → "Confirm email" off), then
+  court → drop-in → RSVP → watch Kafka (`docker compose logs -f notification-service`).
+- [ ] Supabase **Auth → URL Configuration** must allow `http://localhost:3000` for the
+  email confirmation link to return to localhost.
+- [ ] api-gateway has no auth of its own (passes through, forwards the bearer header) — fine
+  for now since each service validates; revisit if we want edge auth.
+- Redis is wired into dropin-service but **unused** right now (future locking; RSVP uses
+  Postgres row locks). Benign "Spring Data Redis could not identify store" log noise.
+- `courts.courts` has RLS disabled — fine for backend-only JDBC; revisit before any client-side Supabase access.
+- `SUPABASE_DB_PASSWORD` must be set in local `.env`.
 
 ## What's next (one finishable chunk)
-First finish the active **real landing page + clean app routing** slice:
-rerun `pnpm lint` and `pnpm build` after the final mobile/reduced-motion tweaks, finish reduced
-motion QA, then verify signed-in `/` → `/home`, signed-in `/home`, and sign-out → `/` with a
-real Supabase session.
-
-**Open a PR for `feature/global-exception-handler` and merge it** (PR #3 for the user vertical
-is already merged). It now also carries the Story B cleanup (deleted messaging/payment/search).
-Skeleton is now minimal: gateway, user, court, dropin (Java) + notification (Go) + frontend.
-**Done when** the full `docker compose up` stack is healthy with all DB-backed services
-validating their schemas. Build new services back only when a real end-to-end flow needs one.
+**Land the signup-UX change, then do a real signed-in end-to-end pass.** Scope: commit +
+push + merge the check-email page (prune the dead `state.message`), then exercise the live
+auth vertical as a signed-in user. **Done when** the change is on `main` AND Daniel has, while
+signed in, created a court, created a drop-in, RSVP'd, and seen `RSVP_CREATED` in the
+notification-service logs.
+- [ ] Decide email-confirm vs. disable-confirmation for dev testing
+- [ ] Commit + merge signup-UX (no self-attribution); prune dead `state.message` in signup-form
+- [ ] Signed-in smoke: court create → drop-in create → RSVP → notification-service logs the event
 
 Out of scope (parked):
 - `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
-- MASTER.md §8.6/§10.3 still say "Booking acquires a row lock on drop_ins.confirmed_players" —
-  contradicts the decided ReserveSlot/ReleaseSlot gRPC design; reconcile in a MASTER edit
-- Phase 2 deferred: migrate Kafka event payloads from JSON to Protobuf (touches Go + search + TS)
-- Phase 3 rest: messaging/payment placeholders, cross-cutting error handling
-- Later: auth, Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics
+- MASTER.md §8.6/§10.3 row-lock booking language contradicts the decided ReserveSlot/ReleaseSlot gRPC design — reconcile in a MASTER edit
+- Migrate Kafka event payloads JSON → Protobuf (touches Go + frontend TS)
+- Edge auth at the gateway (currently per-service only)
+- Later: Redis locking, WebSocket chat, Resend email, Stripe, Elasticsearch, k8s, Rust analytics

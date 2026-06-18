@@ -12,8 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { getGlobalLeaderboard } from "@/lib/mock-data"
 
 export const metadata: Metadata = {
-  title: "Leaderboard | VolleyIQ",
-  description: "Compare VolleyIQ players by global ELO, role, and skill level.",
+  title: "Leaderboard | CourtSync",
+  description: "Compare CourtSync players by global ELO, role, and skill level.",
 }
 
 export default function LeaderboardPage() {
@@ -51,7 +51,7 @@ export default function LeaderboardPage() {
                 </div>
               </div>
               <p className="max-w-2xl text-sm/relaxed text-muted-foreground">
-                Rank every VolleyIQ player by global ELO, then narrow the board
+                Rank every CourtSync player by global ELO, then narrow the board
                 by preferred role or current skill level.
               </p>
             </div>

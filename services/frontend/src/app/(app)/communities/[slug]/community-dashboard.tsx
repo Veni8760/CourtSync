@@ -143,7 +143,7 @@ export function CommunityDashboard({
               <EmptyHeader>
                 <EmptyTitle>No upcoming tournaments</EmptyTitle>
                 <EmptyDescription>
-                  Tournament support is planned for a later VolleyIQ phase.
+                  Tournament support is planned for a later CourtSync phase.
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>

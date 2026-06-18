@@ -1,8 +1,8 @@
-# VolleyIQ Remaining Pages Sequential Build Plan
+# CourtSync Remaining Pages Sequential Build Plan
 
 ## Summary
 
-Build the remaining VolleyIQ pages in sequential slices. Execute only Step 1 first, verify it, then stop for explicit user approval before starting Step 2.
+Build the remaining CourtSync pages in sequential slices. Execute only Step 1 first, verify it, then stop for explicit user approval before starting Step 2.
 
 ## Step 1 - Discovery Feed
 
@@ -47,7 +47,7 @@ Execute these one at a time with verification after each step.
 
 ## UI Step 1 - Home Hero And Shared Navbar
 
-Replace the starter root page with a VolleyIQ home page and add a shared top navigation shell.
+Replace the starter root page with a CourtSync home page and add a shared top navigation shell.
 
 Status: Complete.
 

@@ -22,7 +22,7 @@ import { requireUser } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Add Court | VolleyIQ",
+  title: "Add Court | CourtSync",
   description: "Create a volleyball court location in CourtSync.",
 }
 

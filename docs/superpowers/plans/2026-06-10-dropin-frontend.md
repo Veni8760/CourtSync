@@ -457,7 +457,7 @@ import { DropInApiError, listDropIns, type DropIn } from "@/lib/dropins"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Drop-ins | VolleyIQ",
+  title: "Drop-ins | CourtSync",
   description: "Browse and create volleyball drop-in sessions.",
 }
 
@@ -917,7 +917,7 @@ import { listCourts, type Court } from "@/lib/courts"
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Create drop-in | VolleyIQ",
+  title: "Create drop-in | CourtSync",
 }
 
 export const dynamic = "force-dynamic"

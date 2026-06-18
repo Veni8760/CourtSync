@@ -21,7 +21,7 @@ The source of truth for architecture and decisions:
 
 **[`MASTER.md`](MASTER.md)**
 
-Older VolleyIQ/Spring Modulith docs are historical and should not drive new implementation.
+Older CourtSync/Spring Modulith docs are historical and should not drive new implementation.
 
 ## Repo layout
 

@@ -119,7 +119,7 @@ export function LandingSections({
               One flow from open signup to final score.
             </h2>
             <p className="mt-3 text-sm/relaxed text-muted-foreground">
-              VolleyIQ keeps the moving pieces of a drop-in connected, so hosts
+              CourtSync keeps the moving pieces of a drop-in connected, so hosts
               and players do not have to reconcile rosters by hand.
             </p>
           </motion.div>

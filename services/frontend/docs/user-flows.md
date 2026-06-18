@@ -1,8 +1,8 @@
-# VolleyIQ User Flows
+# CourtSync User Flows
 
-Source of truth: `../docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md`
+Source of truth: `../docs/superpowers/specs/2026-05-13-courtsync-mvp-v2-design.md`
 
-This document defines the first usable frontend slice for VolleyIQ: organizer self-serve onboarding, paid session creation, player signup with guests, payment-state handling, live signups, and team generation. Adjacent flows are included only where they affect these journeys, such as payment failure, checkout abandonment, and cancellation/refund entry points.
+This document defines the first usable frontend slice for CourtSync: organizer self-serve onboarding, paid session creation, player signup with guests, payment-state handling, live signups, and team generation. Adjacent flows are included only where they affect these journeys, such as payment failure, checkout abandonment, and cancellation/refund entry points.
 
 ## Product Scope
 
@@ -194,7 +194,7 @@ An organizer completes Stripe-hosted onboarding so they can publish paid session
    - Backend returns Stripe Account Link URL.
 
 3. Redirect to Stripe
-   - Browser leaves VolleyIQ for hosted onboarding.
+   - Browser leaves CourtSync for hosted onboarding.
    - Capture `connect_onboarding_started`.
 
 4. Return URL
@@ -355,7 +355,7 @@ For the first slice, the main happy path adds guests in the initial signup form.
 
 ### Goal
 
-After Stripe returns to VolleyIQ, the user sees a trustworthy status while the webhook confirms the signup.
+After Stripe returns to CourtSync, the user sees a trustworthy status while the webhook confirms the signup.
 
 ### Screen sequence
 
@@ -571,7 +571,7 @@ Before backend implementation and Supabase Realtime are live, the frontend can e
 
 - Developer controls are hidden by default.
 - They can be enabled by:
-  - `?dev=1` query parameter, persisted to `localStorage.volleyiq.devMode = "true"`, or
+  - `?dev=1` query parameter, persisted to `localStorage.courtsync.devMode = "true"`, or
   - a hidden "Developer tools" switch in `/me` visible only when `NEXT_PUBLIC_ENABLE_DEVTOOLS=true`.
 - When enabled, a small dev trigger appears in relevant authenticated screens.
 - The trigger opens a Sheet on desktop and Drawer on mobile.

@@ -7,7 +7,7 @@ export default function CommunityNotFound() {
     <ResourceNotFoundState
       badge="Community not found"
       title="Community unavailable"
-      description="This community is not in the current VolleyIQ mock directory."
+      description="This community is not in the current CourtSync mock directory."
       href="/explore"
       cta="Explore communities"
       icon={UserGroupIcon}

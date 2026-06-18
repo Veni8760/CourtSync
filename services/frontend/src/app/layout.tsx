@@ -26,7 +26,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "VolleyIQ",
+  title: "CourtSync",
   description:
     "Discover volleyball communities, organize pickup games, and track player ELO.",
 }

@@ -43,7 +43,7 @@ export function LoginForm({
     >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Log in to VolleyIQ</h1>
+          <h1 className="text-2xl font-bold">Log in to CourtSync</h1>
           <p className="text-sm text-balance text-muted-foreground">
             Use your email and password to continue.
           </p>

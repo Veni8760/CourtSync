@@ -37,7 +37,7 @@ export async function SiteHeader({
             <HugeiconsIcon icon={VolleyballIcon} />
           </span>
           <span className="truncate font-heading text-sm font-semibold">
-            VolleyIQ
+            CourtSync
           </span>
         </Link>
 

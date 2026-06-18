@@ -124,7 +124,7 @@ export function HeroSection({
               className="max-w-2xl text-sm/relaxed text-muted-foreground sm:text-base/relaxed"
               variants={fadeUpVariants}
             >
-              VolleyIQ connects local communities, pickup hosts, and players
+              CourtSync connects local communities, pickup hosts, and players
               with signup flows, generated teams, game schedules, and ELO
               profiles.
             </motion.p>

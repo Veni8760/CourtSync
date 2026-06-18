@@ -1,8 +1,8 @@
-# VolleyIQ UI/UX Design System
+# CourtSync UI/UX Design System
 
-Source of truth: `../docs/superpowers/specs/2026-05-13-volleyiq-mvp-v2-design.md`
+Source of truth: `../docs/superpowers/specs/2026-05-13-courtsync-mvp-v2-design.md`
 
-This document defines the visual, interaction, and frontend scaffolding rules for VolleyIQ's first usable product slice. The goal is a quiet, high-trust operational tool for organizing paid casual volleyball sessions, not a marketing-heavy sports site.
+This document defines the visual, interaction, and frontend scaffolding rules for CourtSync's first usable product slice. The goal is a quiet, high-trust operational tool for organizing paid casual volleyball sessions, not a marketing-heavy sports site.
 
 ## Design Principles
 
@@ -30,7 +30,7 @@ Use shadcn/ui primitives, clear tables/lists, restrained density, and the defaul
 
 ### Strict rule
 
-Use only the default shadcn/ui light/dark mode color tokens with the zinc neutral base. Do not introduce custom VolleyIQ brand colors, raw hex colors, Tailwind named colors for branding, or role-specific custom palettes.
+Use only the default shadcn/ui light/dark mode color tokens with the zinc neutral base. Do not introduce custom CourtSync brand colors, raw hex colors, Tailwind named colors for branding, or role-specific custom palettes.
 
 Allowed token families:
 
@@ -626,13 +626,13 @@ They may be enabled only when:
 Persist:
 
 ```text
-localStorage.volleyiq.devMode = "true"
+localStorage.courtsync.devMode = "true"
 ```
 
 Disable:
 
 ```text
-localStorage.volleyiq.devMode = "false"
+localStorage.courtsync.devMode = "false"
 ```
 
 ### Surface

@@ -39,7 +39,7 @@ import {
 import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Courts | VolleyIQ",
+  title: "Courts | CourtSync",
   description: "View volleyball courts saved in CourtSync.",
 }
 
