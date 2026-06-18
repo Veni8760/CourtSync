@@ -58,7 +58,14 @@ Three distinct channels — don't conflate them:
   line dictates the Spring Boot major: 1.0.x ⇒ Boot 4.0.x** (its autoconfig references Boot-4
   internals; running it on Boot 3.5 fails at *runtime* with `NoClassDefFoundError`, not at build).
   Map domain exceptions to gRPC `Status` codes on the server, translate `StatusRuntimeException`
-  back to domain meaning on the client.
+  back to domain meaning on the client. **Security gotcha:** once a gRPC-server service is also an
+  OAuth2 resource server (`issuer-uri` set), spring-grpc's `GrpcSecurityAutoConfiguration` +
+  gRPC `OAuth2ResourceServerAutoConfiguration` **auto-secure the gRPC port too** — internal
+  service→service calls then fail with `UNAUTHENTICATED` (they carry no user JWT). The gRPC port
+  is internal/trusted on the compose network, so exclude both via `spring.autoconfigure.exclude`
+  (see court-service `application.yaml`); REST stays protected by the servlet `SecurityConfig`,
+  a separate filter chain. (The old "the gRPC port isn't covered by the servlet chain" assumption
+  was only half true — spring-grpc has its *own* security layer.)
 - **Service → service, async ("X happened, others may react"): Kafka.** Still plain JSON strings
   per `shared/event-contracts/events.md` (the Go + search consumers decode it). **Deferred:**
   migrating Kafka payloads to Protobuf (touches Go + search + frontend TS + likely a schema
