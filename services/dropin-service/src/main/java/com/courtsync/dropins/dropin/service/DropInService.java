@@ -74,7 +74,8 @@ public class DropInService {
                 saved.getId(), saved.getCourtId(), saved.getMaxPlayers());
 
         events.publishDropInCreated(DropinEvents.DropInCreated.of(
-                saved.getId(), saved.getCourtId(), saved.getOrganizerUserId(), saved.getStartTime(),
+                saved.getId(), saved.getCourtId(), saved.getOrganizerUserId(), saved.getTitle(),
+                saved.getStartTime(), saved.getPrice(), saved.getSkillLevel(),
                 saved.getLatitude(), saved.getLongitude(), saved.getCity()));
 
         return DropInResponse.from(saved);

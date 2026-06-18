@@ -33,6 +33,15 @@ public class DropInDocument {
     @Id
     private String id;
 
+    @Field(type = FieldType.Text)
+    private String title;
+
+    @Field(type = FieldType.Double)
+    private Double price;
+
+    @Field(type = FieldType.Keyword)
+    private String skillLevel;
+
     @Field(type = FieldType.Keyword)
     private String courtId;
 
