@@ -18,17 +18,26 @@ public final class DropinEvents {
     private DropinEvents() {
     }
 
-    /** Published after a drop-in is created. */
+    /**
+     * Published after a drop-in is created. Carries the denormalized court
+     * location (lat/lng/city) so the search index can place it "nearby" without
+     * calling back to any service. Nullable when the court has no coordinates.
+     */
     public record DropInCreated(
             String eventType,
             UUID dropInId,
             UUID courtId,
             UUID organizerUserId,
             Instant startTime,
+            Double latitude,
+            Double longitude,
+            String city,
             Instant timestamp) {
 
-        public static DropInCreated of(UUID dropInId, UUID courtId, UUID organizerUserId, Instant startTime) {
-            return new DropInCreated("DROP_IN_CREATED", dropInId, courtId, organizerUserId, startTime, Instant.now());
+        public static DropInCreated of(UUID dropInId, UUID courtId, UUID organizerUserId, Instant startTime,
+                Double latitude, Double longitude, String city) {
+            return new DropInCreated("DROP_IN_CREATED", dropInId, courtId, organizerUserId, startTime,
+                    latitude, longitude, city, Instant.now());
         }
     }
 

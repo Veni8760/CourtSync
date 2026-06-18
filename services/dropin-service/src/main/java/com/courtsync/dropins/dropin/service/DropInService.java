@@ -48,9 +48,9 @@ public class DropInService {
 
         // courts live in another service — we can't FK to them, so validate over gRPC
         // that the court actually exists before persisting a drop-in that points at it.
-        if (!courtClient.courtExists(req.courtId())) {
-            throw new CourtNotFoundException(req.courtId());
-        }
+        // The same call gives us the court's location, which we denormalize below.
+        CourtClient.CourtView court = courtClient.getCourt(req.courtId())
+                .orElseThrow(() -> new CourtNotFoundException(req.courtId()));
 
         DropIn dropIn = new DropIn();
         dropIn.setCourtId(req.courtId());
@@ -62,6 +62,11 @@ public class DropInService {
         dropIn.setMaxPlayers(req.maxPlayers());
         dropIn.setPrice(req.price() != null ? req.price() : BigDecimal.ZERO);
         dropIn.setSkillLevel(req.skillLevel());
+        // Denormalized court location → lets search index "nearby" without a
+        // cross-service read. Copied once; a drop-in's court never changes.
+        dropIn.setLatitude(court.latitude());
+        dropIn.setLongitude(court.longitude());
+        dropIn.setCity(court.city());
         dropIn.setStatus(DropInStatus.OPEN);
 
         DropIn saved = repository.save(dropIn);
@@ -69,7 +74,8 @@ public class DropInService {
                 saved.getId(), saved.getCourtId(), saved.getMaxPlayers());
 
         events.publishDropInCreated(DropinEvents.DropInCreated.of(
-                saved.getId(), saved.getCourtId(), saved.getOrganizerUserId(), saved.getStartTime()));
+                saved.getId(), saved.getCourtId(), saved.getOrganizerUserId(), saved.getStartTime(),
+                saved.getLatitude(), saved.getLongitude(), saved.getCity()));
 
         return DropInResponse.from(saved);
     }

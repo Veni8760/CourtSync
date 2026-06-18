@@ -45,4 +45,11 @@ message Court {
   string name = 2;
   string surface = 3;
   string net_height = 4;
+  // Location, denormalized by callers (e.g. dropin-service stamps it onto a
+  // drop-in so search can index "nearby"). `optional` gives proto3 field
+  // presence — a court without coordinates is absent, NOT (0,0) which is a real
+  // place. Read with hasLatitude()/hasCity() on the client.
+  optional double latitude = 5;
+  optional double longitude = 6;
+  optional string city = 7;
 }
