@@ -1,5 +1,6 @@
 package com.courtsync.search.dropin.service;
 
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import com.courtsync.search.config.CacheConfig;
 import com.courtsync.search.dropin.document.DropInDocument;
 import com.courtsync.search.dropin.dto.DropInSearchResult;
+import com.courtsync.search.dropin.dto.NearbyFilters;
 import com.courtsync.search.dropin.repository.DropInSearchRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -29,20 +31,41 @@ public class DropInSearchService {
 
     private final DropInSearchRepository repository;
 
-    // Cache by ~100m-rounded coordinates + radius so repeated "near me" queries from
-    // the same spot hit Redis instead of Elasticsearch (the "sub-second" win). 60s TTL.
+    // Cache by ~100m-rounded coordinates + radius + filter values so repeated "near me"
+    // queries from the same spot with the same filters hit Redis instead of Elasticsearch
+    // (the "sub-second" win). 60s TTL.
     @Cacheable(cacheNames = CacheConfig.NEARBY_CACHE,
-            key = "T(java.lang.Math).round(#lat*1000) + ':' + T(java.lang.Math).round(#lng*1000) + ':' + #radiusKm")
-    public List<DropInSearchResult> findNearby(double lat, double lng, double radiusKm) {
+            key = "T(java.lang.Math).round(#lat*1000) + ':' + T(java.lang.Math).round(#lng*1000) + ':' + #radiusKm"
+                    + " + ':' + #filters.skill() + ':' + #filters.maxPrice() + ':' + #filters.from() + ':' + #filters.to()")
+    public List<DropInSearchResult> findNearby(double lat, double lng, double radiusKm, NearbyFilters filters) {
         GeoPoint center = new GeoPoint(lat, lng);
         Distance radius = new Distance(radiusKm, Metrics.KILOMETERS);
 
+        // ES does the radius filter; the rest are applied in-app on that already-small
+        // geo-bounded set. ponytail: push these into an ES bool query if result sets grow.
         return repository.findByLocationNear(center, radius).stream()
                 .filter(doc -> doc.getLocation() != null)
+                .filter(doc -> matches(doc, filters))
                 .map(doc -> toResult(doc, lat, lng))
-                // ponytail: sort in-app; push to an ES geo_distance sort if result sets ever grow large.
                 .sorted(Comparator.comparingDouble(DropInSearchResult::distanceKm))
                 .toList();
+    }
+
+    private static boolean matches(DropInDocument doc, NearbyFilters f) {
+        if (f.skill() != null && !f.skill().equalsIgnoreCase(doc.getSkillLevel())) {
+            return false;
+        }
+        if (f.maxPrice() != null && (doc.getPrice() == null || doc.getPrice() > f.maxPrice())) {
+            return false;
+        }
+        Instant start = doc.getStartTime();
+        if (f.from() != null && (start == null || start.isBefore(f.from()))) {
+            return false;
+        }
+        if (f.to() != null && (start == null || start.isAfter(f.to()))) {
+            return false;
+        }
+        return true;
     }
 
     private DropInSearchResult toResult(DropInDocument doc, double fromLat, double fromLng) {

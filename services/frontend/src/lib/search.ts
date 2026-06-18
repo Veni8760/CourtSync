@@ -23,18 +23,26 @@ export class SearchApiError extends Error {
   }
 }
 
+export type NearbyFilters = {
+  skill?: string
+  maxPrice?: number
+}
+
 // Server-side: queries the geo-search endpoint through the gateway with the
 // caller's Supabase JWT. Browser geolocation supplies lat/lng (see the near-me page).
 export async function searchNearbyDropIns(
   lat: number,
   lng: number,
-  radiusKm: number
+  radiusKm: number,
+  filters: NearbyFilters = {}
 ) {
   const qs = new URLSearchParams({
     lat: String(lat),
     lng: String(lng),
     radiusKm: String(radiusKm),
   })
+  if (filters.skill) qs.set("skill", filters.skill)
+  if (filters.maxPrice != null) qs.set("maxPrice", String(filters.maxPrice))
   const response = await fetch(`${apiBaseUrl()}/search/drop-ins?${qs}`, {
     headers: await authHeaders(),
     cache: "no-store",

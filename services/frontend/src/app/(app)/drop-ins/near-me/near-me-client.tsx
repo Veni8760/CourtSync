@@ -24,11 +24,26 @@ const dateFormatter = new Intl.DateTimeFormat("en-CA", {
   minute: "2-digit",
 })
 
+type Coords = { latitude: number; longitude: number }
+
 export function NearMeClient() {
   const [state, setState] = useState<NearbySearchState>({ status: "idle" })
   const [locating, setLocating] = useState(false)
   const [pending, startTransition] = useTransition()
+  const [coords, setCoords] = useState<Coords | null>(null)
+  const [skill, setSkill] = useState("")
+  const [maxPrice, setMaxPrice] = useState("")
   const busy = locating || pending
+
+  function runSearch(at: Coords, nextSkill: string, nextMaxPrice: string) {
+    const filters = {
+      skill: nextSkill || undefined,
+      maxPrice: nextMaxPrice === "" ? undefined : Number(nextMaxPrice),
+    }
+    startTransition(async () => {
+      setState(await findNearby(at.latitude, at.longitude, RADIUS_KM, filters))
+    })
+  }
 
   function findNearMe() {
     if (!("geolocation" in navigator)) {
@@ -40,9 +55,8 @@ export function NearMeClient() {
       (position) => {
         setLocating(false)
         const { latitude, longitude } = position.coords
-        startTransition(async () => {
-          setState(await findNearby(latitude, longitude, RADIUS_KM))
-        })
+        setCoords({ latitude, longitude })
+        runSearch({ latitude, longitude }, skill, maxPrice)
       },
       (error) => {
         setLocating(false)
@@ -69,10 +83,44 @@ export function NearMeClient() {
         </p>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-end gap-3">
         <Button size="lg" onClick={findNearMe} disabled={busy}>
           {busy ? "Finding…" : "Find drop-ins near me"}
         </Button>
+
+        <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+          Skill
+          <select
+            className="h-9 rounded-md border bg-background px-2 text-sm text-foreground"
+            value={skill}
+            onChange={(event) => {
+              const next = event.target.value
+              setSkill(next)
+              if (coords) runSearch(coords, next, maxPrice)
+            }}
+          >
+            <option value="">Any</option>
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm text-muted-foreground">
+          Max price
+          <input
+            type="number"
+            min={0}
+            placeholder="Any"
+            className="h-9 w-28 rounded-md border bg-background px-2 text-sm text-foreground"
+            value={maxPrice}
+            onChange={(event) => {
+              const next = event.target.value
+              setMaxPrice(next)
+              if (coords) runSearch(coords, skill, next)
+            }}
+          />
+        </label>
       </div>
 
       <div className="mt-8">
