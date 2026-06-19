@@ -14,6 +14,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -203,28 +204,34 @@ export function FindClient() {
             </h1>
           </div>
 
-          {state.status === "error" ? (
+          {/* Initial load (no results yet): skeleton cards instead of a blank list.
+              A re-query that already has results keeps showing them — no flash. */}
+          {pending && results.length === 0 ? <ResultsSkeleton /> : null}
+
+          {!pending && state.status === "error" ? (
             <p className="mt-4 rounded-lg border bg-card p-4 text-sm text-destructive">
               {state.error}
             </p>
           ) : null}
 
-          {state.status === "ok" && results.length === 0 ? (
+          {!pending && state.status === "ok" && results.length === 0 ? (
             <p className="mt-4 rounded-lg border bg-card p-6 text-center text-sm text-muted-foreground">
               No drop-ins here yet. Try a wider radius or a different spot.
             </p>
           ) : null}
 
-          <ul className="mt-4 flex flex-col gap-3">
-            {results.map((dropIn) => (
-              <NearbyCard
-                key={dropIn.id}
-                dropIn={dropIn}
-                active={hoveredId === dropIn.id}
-                onHover={setHoveredId}
-              />
-            ))}
-          </ul>
+          {results.length > 0 ? (
+            <ul className="mt-4 flex flex-col gap-3" aria-busy={pending}>
+              {results.map((dropIn) => (
+                <NearbyCard
+                  key={dropIn.id}
+                  dropIn={dropIn}
+                  active={hoveredId === dropIn.id}
+                  onHover={setHoveredId}
+                />
+              ))}
+            </ul>
+          ) : null}
         </div>
       </div>
     </div>
@@ -272,6 +279,22 @@ function NearbyCard({
         </div>
       </Link>
     </li>
+  )
+}
+
+function ResultsSkeleton() {
+  return (
+    <ul className="mt-4 flex flex-col gap-3" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <li key={i} className="rounded-lg border bg-card p-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <Skeleton className="mt-3 h-3 w-3/4" />
+        </li>
+      ))}
+    </ul>
   )
 }
 

@@ -103,9 +103,6 @@ export function ChangeLocationModal({
       >
         <HugeiconsIcon icon={Location01Icon} className="text-primary" />
         <span className="truncate">{location.label}</span>
-        <span className="font-mono text-xs text-muted-foreground">
-          {location.radiusKm} km
-        </span>
         <HugeiconsIcon icon={ArrowDown01Icon} className="text-muted-foreground" />
       </DialogTrigger>
 
