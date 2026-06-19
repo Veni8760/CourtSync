@@ -18,7 +18,7 @@ export async function SiteHeader({
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
         <Link
-          href={isSignedIn ? "/find" : "/"}
+          href={isSignedIn ? "/home" : "/"}
           className="flex min-w-0 items-center gap-2"
         >
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -28,6 +28,17 @@ export async function SiteHeader({
             CourtSync
           </span>
         </Link>
+
+        {isSignedIn ? (
+          <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+            <Link href="/home" className="transition-colors hover:text-foreground">
+              Home
+            </Link>
+            <Link href="/find" className="transition-colors hover:text-foreground">
+              Drop-ins
+            </Link>
+          </nav>
+        ) : null}
 
         <div className="flex items-center gap-2">
           {isSignedIn ? (
