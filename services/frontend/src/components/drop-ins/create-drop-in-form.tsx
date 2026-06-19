@@ -23,6 +23,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
+import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -168,12 +169,12 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="startTime">Start time</FieldLabel>
-                    <Input
-                      {...textInput(field)}
+                    <DateTimePicker
                       id="startTime"
-                      type="datetime-local"
-                      aria-invalid={fieldState.invalid}
+                      value={(field.value as string) ?? ""}
+                      onChange={field.onChange}
                       disabled={isPending}
+                      aria-invalid={fieldState.invalid}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
@@ -186,12 +187,12 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor="endTime">End time</FieldLabel>
-                    <Input
-                      {...textInput(field)}
+                    <DateTimePicker
                       id="endTime"
-                      type="datetime-local"
-                      aria-invalid={fieldState.invalid}
+                      value={(field.value as string) ?? ""}
+                      onChange={field.onChange}
                       disabled={isPending}
+                      aria-invalid={fieldState.invalid}
                     />
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>

@@ -1,0 +1,74 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CourtSync" [ref=e4] [cursor=pointer]:
+        - /url: /find
+        - img [ref=e6]
+        - generic [ref=e12]: CourtSync
+      - generic [ref=e13]:
+        - link "Host a drop-in" [ref=e14] [cursor=pointer]:
+          - /url: /drop-ins/create
+          - img
+          - text: Host a drop-in
+        - button "Sign out" [ref=e16]
+  - main [ref=e17]:
+    - generic [ref=e19]:
+      - link "Back to map" [ref=e20] [cursor=pointer]:
+        - /url: /find
+        - img
+        - text: Back to map
+      - heading "Create drop-in" [level=1] [ref=e21]
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]: Drop-in details
+        - generic [ref=e26]: Schedule a session at one of your courts.
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - group [ref=e30]:
+            - generic [ref=e31]: Court
+            - combobox [ref=e32]:
+              - generic [ref=e33]: Select a court
+              - img
+            - textbox [ref=e34]
+          - group [ref=e35]:
+            - generic [ref=e36]: Title
+            - textbox "Title" [ref=e37]:
+              - /placeholder: Friday Night Indoor
+          - group [ref=e38]:
+            - generic [ref=e39]: Description
+            - textbox "Description" [ref=e40]:
+              - /placeholder: Casual 6s, all welcome.
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - group [ref=e43]:
+              - generic [ref=e44]: Start time
+              - button "Start time" [ref=e45]:
+                - text: Pick date & time
+                - img [ref=e46]
+            - group [ref=e50]:
+              - generic [ref=e51]: End time
+              - button "End time" [ref=e52]:
+                - text: Pick date & time
+                - img [ref=e53]
+          - paragraph [ref=e57]: Start time must be in the future.
+        - generic [ref=e59]:
+          - group [ref=e60]:
+            - generic [ref=e61]: Max players
+            - spinbutton "Max players" [ref=e62]: "12"
+          - group [ref=e63]:
+            - generic [ref=e64]: Price (CAD)
+            - spinbutton "Price (CAD)" [ref=e65]: "0"
+          - group [ref=e66]:
+            - generic [ref=e67]: Skill level
+            - combobox [ref=e68]:
+              - generic [ref=e69]: Open
+              - img
+            - textbox [ref=e70]: Open
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - img [ref=e73]
+          - text: The court is validated by court-service over gRPC on submit.
+        - button "Create drop-in" [ref=e79]:
+          - img
+          - text: Create drop-in
+  - region "Notifications alt+T"

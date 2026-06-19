@@ -1,0 +1,184 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CourtSync" [ref=e4] [cursor=pointer]:
+        - /url: /find
+        - img [ref=e6]
+        - generic [ref=e12]: CourtSync
+      - generic [ref=e13]:
+        - link "Host a drop-in" [ref=e14] [cursor=pointer]:
+          - /url: /drop-ins/create
+          - img
+          - text: Host a drop-in
+        - button "Sign out" [ref=e16]
+  - main [ref=e17]:
+    - generic [ref=e19]:
+      - link "Back to map" [ref=e20] [cursor=pointer]:
+        - /url: /find
+        - img
+        - text: Back to map
+      - heading "Create drop-in" [level=1] [ref=e21]
+    - generic [ref=e23]:
+      - generic [ref=e24]:
+        - generic [ref=e25]: Drop-in details
+        - generic [ref=e26]: Schedule a session at one of your courts.
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - group [ref=e30]:
+            - generic [ref=e31]: Court
+            - combobox [ref=e32]:
+              - generic [ref=e33]: Select a court
+              - img
+            - textbox [ref=e34]
+          - group [ref=e35]:
+            - generic [ref=e36]: Title
+            - textbox "Title" [ref=e37]:
+              - /placeholder: Friday Night Indoor
+          - group [ref=e38]:
+            - generic [ref=e39]: Description
+            - textbox "Description" [ref=e40]:
+              - /placeholder: Casual 6s, all welcome.
+        - generic [ref=e41]:
+          - generic [ref=e42]:
+            - group [ref=e43]:
+              - generic [ref=e44]: Start time
+              - button "Start time" [expanded] [ref=e45]:
+                - text: Pick date & time
+                - img [ref=e46]
+              - dialog [ref=e84]:
+                - generic [ref=e86]:
+                  - navigation "Navigation bar" [ref=e87]:
+                    - button "Go to the Previous Month" [active] [ref=e88]:
+                      - img
+                    - button "Go to the Next Month" [ref=e89]:
+                      - img
+                  - generic [ref=e90]:
+                    - status [ref=e92]: June 2026
+                    - grid "June 2026" [ref=e93]:
+                      - rowgroup [ref=e94]:
+                        - row [ref=e95]:
+                          - columnheader [ref=e96]: Su
+                          - columnheader [ref=e97]: Mo
+                          - columnheader [ref=e98]: Tu
+                          - columnheader [ref=e99]: We
+                          - columnheader [ref=e100]: Th
+                          - columnheader [ref=e101]: Fr
+                          - columnheader [ref=e102]: Sa
+                      - rowgroup [ref=e103]:
+                        - row "Sunday, May 31st, 2026 Monday, June 1st, 2026 Tuesday, June 2nd, 2026 Wednesday, June 3rd, 2026 Thursday, June 4th, 2026 Friday, June 5th, 2026 Saturday, June 6th, 2026" [ref=e104]:
+                          - gridcell "Sunday, May 31st, 2026" [ref=e105]:
+                            - button "Sunday, May 31st, 2026" [ref=e106]: "31"
+                          - gridcell "Monday, June 1st, 2026" [ref=e107]:
+                            - button "Monday, June 1st, 2026" [ref=e108]: "1"
+                          - gridcell "Tuesday, June 2nd, 2026" [ref=e109]:
+                            - button "Tuesday, June 2nd, 2026" [ref=e110]: "2"
+                          - gridcell "Wednesday, June 3rd, 2026" [ref=e111]:
+                            - button "Wednesday, June 3rd, 2026" [ref=e112]: "3"
+                          - gridcell "Thursday, June 4th, 2026" [ref=e113]:
+                            - button "Thursday, June 4th, 2026" [ref=e114]: "4"
+                          - gridcell "Friday, June 5th, 2026" [ref=e115]:
+                            - button "Friday, June 5th, 2026" [ref=e116]: "5"
+                          - gridcell "Saturday, June 6th, 2026" [ref=e117]:
+                            - button "Saturday, June 6th, 2026" [ref=e118]: "6"
+                        - row "Sunday, June 7th, 2026 Monday, June 8th, 2026 Tuesday, June 9th, 2026 Wednesday, June 10th, 2026 Thursday, June 11th, 2026 Friday, June 12th, 2026 Saturday, June 13th, 2026" [ref=e119]:
+                          - gridcell "Sunday, June 7th, 2026" [ref=e120]:
+                            - button "Sunday, June 7th, 2026" [ref=e121]: "7"
+                          - gridcell "Monday, June 8th, 2026" [ref=e122]:
+                            - button "Monday, June 8th, 2026" [ref=e123]: "8"
+                          - gridcell "Tuesday, June 9th, 2026" [ref=e124]:
+                            - button "Tuesday, June 9th, 2026" [ref=e125]: "9"
+                          - gridcell "Wednesday, June 10th, 2026" [ref=e126]:
+                            - button "Wednesday, June 10th, 2026" [ref=e127]: "10"
+                          - gridcell "Thursday, June 11th, 2026" [ref=e128]:
+                            - button "Thursday, June 11th, 2026" [ref=e129]: "11"
+                          - gridcell "Friday, June 12th, 2026" [ref=e130]:
+                            - button "Friday, June 12th, 2026" [ref=e131]: "12"
+                          - gridcell "Saturday, June 13th, 2026" [ref=e132]:
+                            - button "Saturday, June 13th, 2026" [ref=e133]: "13"
+                        - row "Sunday, June 14th, 2026 Monday, June 15th, 2026 Tuesday, June 16th, 2026 Wednesday, June 17th, 2026 Today, Thursday, June 18th, 2026 Friday, June 19th, 2026 Saturday, June 20th, 2026" [ref=e134]:
+                          - gridcell "Sunday, June 14th, 2026" [ref=e135]:
+                            - button "Sunday, June 14th, 2026" [ref=e136]: "14"
+                          - gridcell "Monday, June 15th, 2026" [ref=e137]:
+                            - button "Monday, June 15th, 2026" [ref=e138]: "15"
+                          - gridcell "Tuesday, June 16th, 2026" [ref=e139]:
+                            - button "Tuesday, June 16th, 2026" [ref=e140]: "16"
+                          - gridcell "Wednesday, June 17th, 2026" [ref=e141]:
+                            - button "Wednesday, June 17th, 2026" [ref=e142]: "17"
+                          - gridcell "Today, Thursday, June 18th, 2026" [ref=e143]:
+                            - button "Today, Thursday, June 18th, 2026" [ref=e144]: "18"
+                          - gridcell "Friday, June 19th, 2026" [ref=e145]:
+                            - button "Friday, June 19th, 2026" [ref=e146]: "19"
+                          - gridcell "Saturday, June 20th, 2026" [ref=e147]:
+                            - button "Saturday, June 20th, 2026" [ref=e148]: "20"
+                        - row "Sunday, June 21st, 2026 Monday, June 22nd, 2026 Tuesday, June 23rd, 2026 Wednesday, June 24th, 2026 Thursday, June 25th, 2026 Friday, June 26th, 2026 Saturday, June 27th, 2026" [ref=e149]:
+                          - gridcell "Sunday, June 21st, 2026" [ref=e150]:
+                            - button "Sunday, June 21st, 2026" [ref=e151]: "21"
+                          - gridcell "Monday, June 22nd, 2026" [ref=e152]:
+                            - button "Monday, June 22nd, 2026" [ref=e153]: "22"
+                          - gridcell "Tuesday, June 23rd, 2026" [ref=e154]:
+                            - button "Tuesday, June 23rd, 2026" [ref=e155]: "23"
+                          - gridcell "Wednesday, June 24th, 2026" [ref=e156]:
+                            - button "Wednesday, June 24th, 2026" [ref=e157]: "24"
+                          - gridcell "Thursday, June 25th, 2026" [ref=e158]:
+                            - button "Thursday, June 25th, 2026" [ref=e159]: "25"
+                          - gridcell "Friday, June 26th, 2026" [ref=e160]:
+                            - button "Friday, June 26th, 2026" [ref=e161]: "26"
+                          - gridcell "Saturday, June 27th, 2026" [ref=e162]:
+                            - button "Saturday, June 27th, 2026" [ref=e163]: "27"
+                        - row "Sunday, June 28th, 2026 Monday, June 29th, 2026 Tuesday, June 30th, 2026 Wednesday, July 1st, 2026 Thursday, July 2nd, 2026 Friday, July 3rd, 2026 Saturday, July 4th, 2026" [ref=e164]:
+                          - gridcell "Sunday, June 28th, 2026" [ref=e165]:
+                            - button "Sunday, June 28th, 2026" [ref=e166]: "28"
+                          - gridcell "Monday, June 29th, 2026" [ref=e167]:
+                            - button "Monday, June 29th, 2026" [ref=e168]: "29"
+                          - gridcell "Tuesday, June 30th, 2026" [ref=e169]:
+                            - button "Tuesday, June 30th, 2026" [ref=e170]: "30"
+                          - gridcell "Wednesday, July 1st, 2026" [ref=e171]:
+                            - button "Wednesday, July 1st, 2026" [ref=e172]: "1"
+                          - gridcell "Thursday, July 2nd, 2026" [ref=e173]:
+                            - button "Thursday, July 2nd, 2026" [ref=e174]: "2"
+                          - gridcell "Friday, July 3rd, 2026" [ref=e175]:
+                            - button "Friday, July 3rd, 2026" [ref=e176]: "3"
+                          - gridcell "Saturday, July 4th, 2026" [ref=e177]:
+                            - button "Saturday, July 4th, 2026" [ref=e178]: "4"
+                - generic [ref=e179]:
+                  - combobox "Hour" [ref=e180]:
+                    - generic [ref=e181]: "6"
+                    - img
+                  - textbox [ref=e182]: "6"
+                  - generic [ref=e183]: ":"
+                  - combobox "Minute" [ref=e184]:
+                    - generic [ref=e185]: "00"
+                    - img
+                  - textbox [ref=e186]: "0"
+                  - combobox "AM/PM" [ref=e187]:
+                    - generic [ref=e188]: PM
+                    - img
+                  - textbox [ref=e189]: PM
+            - group [ref=e50]:
+              - generic [ref=e51]: End time
+              - button "End time" [ref=e52]:
+                - text: Pick date & time
+                - img [ref=e53]
+          - paragraph [ref=e57]: Start time must be in the future.
+        - generic [ref=e59]:
+          - group [ref=e60]:
+            - generic [ref=e61]: Max players
+            - spinbutton "Max players" [ref=e62]: "12"
+          - group [ref=e63]:
+            - generic [ref=e64]: Price (CAD)
+            - spinbutton "Price (CAD)" [ref=e65]: "0"
+          - group [ref=e66]:
+            - generic [ref=e67]: Skill level
+            - combobox [ref=e68]:
+              - generic [ref=e69]: Open
+              - img
+            - textbox [ref=e70]: Open
+      - generic [ref=e71]:
+        - generic [ref=e72]:
+          - img [ref=e73]
+          - text: The court is validated by court-service over gRPC on submit.
+        - button "Create drop-in" [ref=e79]:
+          - img
+          - text: Create drop-in
+  - region "Notifications alt+T"
+  - alert [ref=e192]
