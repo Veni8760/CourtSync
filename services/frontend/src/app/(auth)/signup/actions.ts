@@ -60,7 +60,7 @@ export async function signup(
   }
 
   revalidatePath("/", "layout")
-  redirect("/find")
+  redirect("/home")
 }
 
 function splitFullName(fullName: string) {

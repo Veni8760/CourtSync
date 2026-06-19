@@ -6,6 +6,6 @@ import { LandingPage } from "@/components/marketing/landing-page"
 // Public marketing front door for signed-out visitors; signed-in users skip
 // straight into the app.
 export default async function RootPage() {
-  if (await getIsSignedIn()) redirect("/find")
+  if (await getIsSignedIn()) redirect("/home")
   return <LandingPage />
 }
