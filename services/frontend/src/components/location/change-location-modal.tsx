@@ -19,6 +19,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { geocode, reverseGeocode } from "@/lib/geocode"
 import { RADIUS_OPTIONS, type SearchLocation } from "@/lib/location"
 
@@ -135,25 +143,32 @@ export function ChangeLocationModal({
           ) : null}
         </form>
 
-        <label className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1">
           <span className="text-xs font-medium text-muted-foreground">Radius</span>
-          <select
-            value={draft.radiusKm}
-            onChange={(event) =>
-              setDraft((current) => ({
-                ...current,
-                radiusKm: Number(event.target.value),
-              }))
+          <Select
+            value={String(draft.radiusKm)}
+            onValueChange={(value) =>
+              setDraft((current) => ({ ...current, radiusKm: Number(value) }))
             }
-            className="h-9 rounded-md border bg-background px-3 text-sm"
+            items={RADIUS_OPTIONS.map((km) => ({
+              value: String(km),
+              label: `${km} kilometers`,
+            }))}
           >
-            {RADIUS_OPTIONS.map((km) => (
-              <option key={km} value={km}>
-                {km} kilometers
-              </option>
-            ))}
-          </select>
-        </label>
+            <SelectTrigger className="w-full" aria-label="Radius">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {RADIUS_OPTIONS.map((km) => (
+                  <SelectItem key={km} value={String(km)}>
+                    {km} kilometers
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="h-64 overflow-hidden rounded-lg border">
           <LocationPicker

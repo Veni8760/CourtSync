@@ -8,6 +8,15 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ChangeLocationModal } from "@/components/location/change-location-modal"
 import { reverseGeocode } from "@/lib/geocode"
 import { useSearchLocation, type SearchLocation } from "@/lib/location"
@@ -100,27 +109,33 @@ export function FindClient() {
         </Button>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          <select
-            value={skill}
-            onChange={(event) => setSkill(event.target.value)}
-            aria-label="Skill level"
-            className="h-9 rounded-md border bg-background px-3 text-sm"
+          <Select
+            value={skill || "ANY"}
+            onValueChange={(value) => setSkill(!value || value === "ANY" ? "" : value)}
+            items={[{ value: "ANY", label: "Any skill" }, ...skillLevelOptions]}
           >
-            <option value="">Any skill</option>
-            {skillLevelOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <input
+            <SelectTrigger className="w-36" aria-label="Skill level">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="ANY">Any skill</SelectItem>
+                {skillLevelOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Input
             type="number"
             min={0}
             value={maxPrice}
             onChange={(event) => setMaxPrice(event.target.value)}
             placeholder="Max $"
             aria-label="Max price"
-            className="h-9 w-24 rounded-md border bg-background px-3 text-sm"
+            className="h-9 w-24"
           />
         </div>
       </div>
