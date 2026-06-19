@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation"
 
 import { getIsSignedIn } from "@/lib/auth"
+import { LandingPage } from "@/components/marketing/landing-page"
 
-// No marketing site — the product is the map. Send people straight to the find
-// screen, or to login if they're not signed in.
+// Public marketing front door for signed-out visitors; signed-in users skip
+// straight into the app.
 export default async function RootPage() {
-  redirect((await getIsSignedIn()) ? "/find" : "/login")
+  if (await getIsSignedIn()) redirect("/find")
+  return <LandingPage />
 }
