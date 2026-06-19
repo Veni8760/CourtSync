@@ -5,7 +5,12 @@ import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Calendar03Icon, Location01Icon } from "@hugeicons/core-free-icons"
+import {
+  Calendar03Icon,
+  Cancel01Icon,
+  Location01Icon,
+  SlidersHorizontalIcon,
+} from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,8 +24,8 @@ import {
 } from "@/components/ui/select"
 import { ChangeLocationModal } from "@/components/location/change-location-modal"
 import { reverseGeocode } from "@/lib/geocode"
-import { useSearchLocation, type SearchLocation } from "@/lib/location"
-import { skillLevelOptions } from "@/lib/form-options"
+import { RADIUS_OPTIONS, useSearchLocation, type SearchLocation } from "@/lib/location"
+import { skillLevelOptions, surfaceOptions } from "@/lib/form-options"
 import type { NearbyDropIn } from "@/lib/search"
 
 import { findNearby, type NearbySearchState } from "./actions"
@@ -49,6 +54,10 @@ function formatPrice(price: number | null) {
 export function FindClient() {
   const { location, setLocation, ready } = useSearchLocation()
   const [skill, setSkill] = useState("")
+  // ponytail: surface lives in client state only — the search read model doesn't
+  // index surface yet, so it can't narrow server results. It's a real, styled
+  // control today and starts filtering the moment the index carries surface.
+  const [surface, setSurface] = useState("")
   const [maxPrice, setMaxPrice] = useState("")
   const [state, setState] = useState<NearbySearchState | { status: "idle" }>({
     status: "idle",
@@ -92,6 +101,13 @@ export function FindClient() {
     setLocation(next)
   }
 
+  const filtersActive = Boolean(skill || surface || maxPrice)
+  function clearFilters() {
+    setSkill("")
+    setSurface("")
+    setMaxPrice("")
+  }
+
   const results = state.status === "ok" ? state.results : []
   const points = results.map((dropIn) => ({
     id: dropIn.id,
@@ -101,43 +117,69 @@ export function FindClient() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-wrap items-center gap-3">
-        <ChangeLocationModal location={location} onApply={applyLocation} />
-        <Button variant="outline" onClick={useMyLocation} disabled={locating}>
-          <HugeiconsIcon icon={Location01Icon} data-icon="inline-start" />
-          {locating ? "Locating…" : "Use my location"}
-        </Button>
+      <div className="rounded-xl border bg-card/60 p-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <ChangeLocationModal location={location} onApply={applyLocation} />
+          <Button variant="outline" onClick={useMyLocation} disabled={locating}>
+            <HugeiconsIcon icon={Location01Icon} data-icon="inline-start" />
+            {locating ? "Locating…" : "Use my location"}
+          </Button>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Select
-            value={skill || "ANY"}
-            onValueChange={(value) => setSkill(!value || value === "ANY" ? "" : value)}
-            items={[{ value: "ANY", label: "Any skill" }, ...skillLevelOptions]}
-          >
-            <SelectTrigger className="w-36" aria-label="Skill level">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="ANY">Any skill</SelectItem>
-                {skillLevelOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Input
-            type="number"
-            min={0}
-            value={maxPrice}
-            onChange={(event) => setMaxPrice(event.target.value)}
-            placeholder="Max $"
-            aria-label="Max price"
-            className="h-9 w-24"
-          />
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <span className="hidden items-center gap-1.5 pr-1 text-xs text-muted-foreground sm:flex">
+              <HugeiconsIcon icon={SlidersHorizontalIcon} />
+              Filters
+            </span>
+            <FilterSelect
+              ariaLabel="Radius"
+              className="w-24"
+              value={String(location.radiusKm)}
+              onValueChange={(value) =>
+                setLocation({ ...location, radiusKm: Number(value) })
+              }
+              options={RADIUS_OPTIONS.map((km) => ({
+                value: String(km),
+                label: `${km} km`,
+              }))}
+            />
+            <FilterSelect
+              ariaLabel="Skill level"
+              className="w-32"
+              value={skill || "ANY"}
+              onValueChange={(value) => setSkill(value === "ANY" ? "" : value)}
+              options={[{ value: "ANY", label: "Any skill" }, ...skillLevelOptions]}
+            />
+            <FilterSelect
+              ariaLabel="Surface"
+              className="w-32"
+              value={surface || "ANY"}
+              onValueChange={(value) => setSurface(value === "ANY" ? "" : value)}
+              options={[{ value: "ANY", label: "Any surface" }, ...surfaceOptions]}
+            />
+            <Input
+              type="number"
+              min={0}
+              value={maxPrice}
+              onChange={(event) => setMaxPrice(event.target.value)}
+              placeholder="Max $"
+              aria-label="Max price"
+              className="h-9 w-24"
+            />
+            {filtersActive ? (
+              <Button variant="ghost" onClick={clearFilters} aria-label="Clear filters">
+                <HugeiconsIcon icon={Cancel01Icon} data-icon="inline-start" />
+                Clear
+              </Button>
+            ) : null}
+          </div>
         </div>
+
+        {surface ? (
+          <p className="mt-2 px-1 text-xs text-muted-foreground">
+            Showing every surface for now — surface filtering lands with the next
+            search-index update.
+          </p>
+        ) : null}
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
@@ -230,5 +272,40 @@ function NearbyCard({
         </div>
       </Link>
     </li>
+  )
+}
+
+function FilterSelect({
+  ariaLabel,
+  value,
+  onValueChange,
+  options,
+  className,
+}: {
+  ariaLabel: string
+  value: string
+  onValueChange: (value: string) => void
+  options: ReadonlyArray<{ value: string; label: string }>
+  className?: string
+}) {
+  return (
+    <Select
+      value={value}
+      onValueChange={(next) => next && onValueChange(next)}
+      items={options as { value: string; label: string }[]}
+    >
+      <SelectTrigger className={`h-9 ${className ?? ""}`} aria-label={ariaLabel}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectGroup>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
   )
 }
