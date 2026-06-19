@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-18 (evening — map-first UI redesign merged)_
+_Last updated: 2026-06-19 (frontend UI: landing + home hub + drop-ins filter toolbar merged)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -152,7 +152,39 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
 
 ---
 
-## What we did this session (2026-06-18)
+## What we did this session (2026-06-19) — frontend UI overhaul (3 pages)
+Autonomous `/goal` run: build a production-ready, **shadcn-only** UI extensible beyond
+drop-ins, matching a shadcnblocks reference's visual language. Each page: design → build →
+Playwright-verify → lint → build → PR → merge. All on the existing design system (Mikasa
+cobalt + rally-yellow + sand on court-ink, Archivo / Inter / Geist Mono). No new deps; the
+`@shadcn` registry ships no marketing/hero block, so all three compose installed primitives.
+- **Public landing page (merged, PR #20):** `src/components/marketing/landing-page.tsx` +
+  root `/` now renders it for signed-out visitors (signed-in → app). Sticky nav → hero with a
+  signature stylised map (rally ring + cobalt pins + floating result card, pure CSS, no
+  Leaflet) → dark three-step band → 4-card feature grid → sand closing CTA → footer. Decision:
+  dropped the reference's pricing section (CourtSync has no pricing — a fake table reads templated).
+- **Post-login home hub (merged, PR #21):** `/home` dashboard. Drop-ins (the only live surface)
+  gets a hero panel echoing the find-screen map motif; Communities + Group court rentals + "More
+  on the way" ship as disabled *Coming soon* shells so the layout already fits the roadmap.
+  Wiring: root `/`, login, signup, email-confirm now land signed-in users on `/home` (was
+  `/find`); header gains Home / Drop-ins nav. Decision noted in PR: `/home` is the post-login
+  landing, `/find` stays one tap away everywhere.
+- **Drop-ins filter toolbar (merged, PR #22):** reworked `/find`'s filter row into a bordered
+  toolbar — Radius / Skill / **Surface** / Max-price selects + a Clear button, DRY'd via a local
+  `FilterSelect`. Surface (Indoor/Grass/Beach — the real `Surface` enum; "outdoor" isn't a
+  surface here) is a styled UI shell: the search read model doesn't index surface yet, so an
+  inline note says so and results aren't dropped; it starts filtering once the index carries it.
+- **Verification approach (reusable):** the docker `frontend` container is a built image (no
+  bind-mount) → ran a host `pnpm dev --port 3005` with env sourced from root `.env` (Supabase is
+  cloud; gateway published on `localhost:8080`) to Playwright-verify against the live stack.
+  Logged in as the test account; landing/home/find all screenshot-verified desktop + mobile.
+- **Infra note (not code):** Elasticsearch was **down** in the dev env (no `elasticsearch`
+  container running) → `/find` returned 500. Started it (`docker compose up -d elasticsearch`) +
+  restarted `search-service`; index rebuilt to 2 docs and `/find` returned them nearest-first.
+
+<details><summary>Earlier — 2026-06-18 session (auth, search vertical, map-first redesign)</summary>
+
+## What we did 2026-06-18
 - **Story B cleanup (merged, PR #4):** deleted the empty `messaging`/`payment`/`search`
   service skeletons (bloat) + their refs in `docker-compose.yml`, `.env.example`,
   `infra/postgres/init.sql`, DropinEvents comment. Skeleton is now gateway · user · court ·
@@ -235,7 +267,16 @@ Frontend (DONE 2026-06-11, built via subagent-driven-development, all shadcn reg
   Playwright:** login→/find, geocode "Mississauga"→recenter→Apply→distance recomputed to 22.2 km,
   skill filter→empty state, court-create map renders. `pnpm build` + `pnpm lint` green.
 
+</details>
+
 ## What's unfinished / open questions
+- [ ] **Rebuild the docker `frontend` container to serve the new UI** — :3001 still runs the
+  pre-#20/#21/#22 image (`docker compose up -d --build frontend`). Verified via host dev server only.
+- [ ] **Keep Elasticsearch in the default `up`** — it was found stopped this session; `/find`
+  500s without it. Confirm it's not gated behind a profile that's easy to forget.
+- [ ] Surface filter is UI-only until the search read model indexes `surface` (small backend
+  follow-up: add `surface` to `DropInDocument` + the `DROP_IN_CREATED` event, then the existing
+  control filters for real with no frontend change).
 - [ ] Redesign polish not yet exercised live: card↔pin hover-sync color, "Use my location"
   (needs a real geolocation grant), create-drop-in happy path on the new tokens. Low risk (build
   passed); spot-check in the browser.
