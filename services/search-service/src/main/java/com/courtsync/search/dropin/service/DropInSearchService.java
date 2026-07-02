@@ -36,14 +36,19 @@ public class DropInSearchService {
     // (the "sub-second" win). 60s TTL.
     @Cacheable(cacheNames = CacheConfig.NEARBY_CACHE,
             key = "T(java.lang.Math).round(#lat*1000) + ':' + T(java.lang.Math).round(#lng*1000) + ':' + #radiusKm"
-                    + " + ':' + #filters.skill() + ':' + #filters.maxPrice() + ':' + #filters.from() + ':' + #filters.to()")
+                    + " + ':' + #filters.q() + ':' + #filters.skill() + ':' + #filters.maxPrice()"
+                    + " + ':' + #filters.from() + ':' + #filters.to()")
     public List<DropInSearchResult> findNearby(double lat, double lng, double radiusKm, NearbyFilters filters) {
         GeoPoint center = new GeoPoint(lat, lng);
         Distance radius = new Distance(radiusKm, Metrics.KILOMETERS);
 
-        // ES does the radius filter; the rest are applied in-app on that already-small
+        // ES does the radius filter (plus a full-text title match when a keyword is
+        // given); the remaining filters are applied in-app on that already-small
         // geo-bounded set. ponytail: push these into an ES bool query if result sets grow.
-        return repository.findByLocationNear(center, radius).stream()
+        List<DropInDocument> hits = filters.hasKeyword()
+                ? repository.findByLocationNearAndTitle(center, radius, filters.q())
+                : repository.findByLocationNear(center, radius);
+        return hits.stream()
                 .filter(doc -> doc.getLocation() != null)
                 .filter(doc -> matches(doc, filters))
                 .map(doc -> toResult(doc, lat, lng))

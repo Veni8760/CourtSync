@@ -25,17 +25,19 @@ public class SearchController {
 
     private final DropInSearchService service;
 
-    // Optional filters (skill, maxPrice, from/to as ISO-8601 instants) narrow the
-    // radius results; omitting a param means "don't filter on it".
+    // Optional filters narrow the radius results; omitting a param means "don't
+    // filter on it". q is a free-text keyword matched against the drop-in title
+    // (full-text, tokenized); skill/maxPrice/from/to (ISO-8601 instants) filter the rest.
     @GetMapping("/drop-ins")
     public List<DropInSearchResult> nearby(
             @RequestParam double lat,
             @RequestParam double lng,
             @RequestParam(defaultValue = "10") double radiusKm,
+            @RequestParam(required = false) String q,
             @RequestParam(required = false) String skill,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to) {
-        return service.findNearby(lat, lng, radiusKm, new NearbyFilters(skill, maxPrice, from, to));
+        return service.findNearby(lat, lng, radiusKm, new NearbyFilters(q, skill, maxPrice, from, to));
     }
 }

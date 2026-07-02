@@ -75,17 +75,40 @@ class DropInSearchServiceTest {
                 .thenReturn(List.of(cheapBeginnerSat, pricyAdvancedSun));
 
         // skill filter
-        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters("Beginner", null, null, null)))
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, "Beginner", null, null, null)))
                 .extracting(DropInSearchResult::id).containsExactly("a");
         // maxPrice filter
-        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, 15.0, null, null)))
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, null, 15.0, null, null)))
                 .extracting(DropInSearchResult::id).containsExactly("a");
         // date-window filter (Saturday only)
         assertThat(service.findNearby(lat, lng, 50,
-                new NearbyFilters(null, null, sat.minusSeconds(3600), sat.plusSeconds(3600))))
+                new NearbyFilters(null, null, null, sat.minusSeconds(3600), sat.plusSeconds(3600))))
                 .extracting(DropInSearchResult::id).containsExactly("a");
         // no filter → both
         assertThat(service.findNearby(lat, lng, 50, NearbyFilters.NONE))
                 .extracting(DropInSearchResult::id).containsExactlyInAnyOrder("a", "b");
+    }
+
+    @Test
+    void keywordRoutesToTitleMatchQuery() {
+        double lat = 43.6532, lng = -79.3832;
+        DropInDocument match = doc("kw", 43.66, -79.39);
+
+        // A non-blank q must hit the title-match repo method, NOT the plain geo one.
+        when(repository.findByLocationNearAndTitle(any(GeoPoint.class), any(), any()))
+                .thenReturn(List.of(match));
+
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters("beginner", null, null, null, null)))
+                .extracting(DropInSearchResult::id).containsExactly("kw");
+    }
+
+    @Test
+    void blankKeywordIsIgnored() {
+        // Blank/whitespace q must NOT trigger the match query — falls back to plain geo.
+        when(repository.findByLocationNear(any(GeoPoint.class), any()))
+                .thenReturn(List.of(doc("x", 43.66, -79.39)));
+
+        assertThat(service.findNearby(43.6532, -79.3832, 50, new NearbyFilters("  ", null, null, null, null)))
+                .extracting(DropInSearchResult::id).containsExactly("x");
     }
 }

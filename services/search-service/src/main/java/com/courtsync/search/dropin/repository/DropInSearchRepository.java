@@ -21,4 +21,13 @@ public interface DropInSearchRepository extends ElasticsearchRepository<DropInDo
      * result sets) rather than a native geo-sort.
      */
     List<DropInDocument> findByLocationNear(GeoPoint point, Distance distance);
+
+    /**
+     * Same geo_distance filter, additionally requiring the {@code title} to match
+     * {@code keyword}. Because {@code title} is mapped as analyzed {@code text},
+     * Spring Data ES turns the String criterion into a full-text {@code match}
+     * query (tokenized, case-insensitive) and ANDs it with the geo filter in a
+     * bool query — so "beginner" matches "Beginner Friendly Drop-in".
+     */
+    List<DropInDocument> findByLocationNearAndTitle(GeoPoint point, Distance distance, String keyword);
 }
