@@ -316,9 +316,13 @@ runs an ES `match` on the analyzed `title`, ANDed with the geo radius.
 - [x] **Verified live at the ES layer:** indexed 2 docs, `q=beginner` returned only the "Beginner
       Friendly Drop-in" doc within radius (tokenized/case-insensitive), geo-only returned both.
       Container boots clean (Spring Data parsed the derived query).
-- [ ] **Not verified:** full HTTP round-trip through the JWT-gated endpoint — live Supabase requires
-      email confirmation, couldn't mint a token without changing project settings.
-- [ ] **frontend near-me: a search box that re-queries on submit** ← the remaining finishable chunk
+- [x] **frontend near-me: keyword search box on `/find`** (`19634d7`) — submitted-query state so the
+      ES match fires on submit/Enter, not per keystroke; threaded through `NearbyFilters`, clear-filters,
+      active flag. `pnpm lint` + `pnpm build` green; frontend container rebuilt (serves new UI: `/`=200,
+      `/find`=307→login, `/login`=200).
+- [ ] **Not verified live (auth-gated):** full HTTP round-trip through the JWT endpoint / clicking the
+      search box in-browser — live Supabase requires email confirmation, couldn't mint a token or log in
+      without changing project settings. Backend proven via unit + ES-direct; frontend via build.
 
 ### Also uncommitted-then-committed this session (2026-07-02)
 - Branch `chore/compose-host-port-remaps` (`5812a6d`): kafka/court host ports made env-overridable
