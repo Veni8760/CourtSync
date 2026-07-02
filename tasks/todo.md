@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-06-19 (frontend UI: landing + home hub + drop-ins filter toolbar merged)_
+_Last updated: 2026-07-02 (Search Phase 6 backend — keyword/title full-text search — done on a branch)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -303,22 +303,29 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## What's next (one finishable chunk) — Search Phase 6: keyword/title full-text search
-The geo + filter search is done; the one ES capability not yet exercised is its actual strength —
-**full-text**. Add an optional `q` that matches drop-in `title` (already a `text` field, analyzed).
-This is the most resume-defensible next step ("why Elasticsearch and not Postgres?" → full-text
-relevance, not just geo).
+## Search Phase 6 — keyword/title full-text search (backend DONE, branch `feat/search-keyword-title` `1b195f3`, NOT pushed)
+The one ES strength not yet exercised — **full-text** — is now wired. `GET /search/drop-ins?...&q=smash`
+runs an ES `match` on the analyzed `title`, ANDed with the geo radius.
 
-**Done when** `GET /api/search/drop-ins?lat&lng&radiusKm&q=smash` returns only drop-ins whose title
-matches `smash`, combined with the geo radius, with a test proving it narrows.
+- [x] Added derived repo method `findByLocationNearAndTitle` (geo_distance + `match` on `title`);
+      `findNearby` branches to it only when `q` is non-blank (kept the derived-query style over a
+      native query — same idiom as the rest, and boot-time parse validates it)
+- [x] `SearchController`: optional `@RequestParam q`; `NearbyFilters` gained `q` + `hasKeyword()`
+- [x] `@Cacheable` key extended with `q` (keyworded vs plain queries cache separately)
+- [x] tests: `keywordRoutesToTitleMatchQuery` + `blankKeywordIsIgnored` (6/6 module green)
+- [x] **Verified live at the ES layer:** indexed 2 docs, `q=beginner` returned only the "Beginner
+      Friendly Drop-in" doc within radius (tokenized/case-insensitive), geo-only returned both.
+      Container boots clean (Spring Data parsed the derived query).
+- [ ] **Not verified:** full HTTP round-trip through the JWT-gated endpoint — live Supabase requires
+      email confirmation, couldn't mint a token without changing project settings.
+- [ ] **frontend near-me: a search box that re-queries on submit** ← the remaining finishable chunk
 
-- [ ] Switch `findNearby` from the derived `findByLocationNear` to a native ES query (geo_distance
-      filter + a `match` on `title` when `q` present) — or post-filter, but a `match` query is the
-      point here (relevance scoring), so do it in ES
-- [ ] `SearchController`: optional `@RequestParam q`; thread through `NearbyFilters` (add `q`)
-- [ ] frontend near-me: a search box that re-queries on submit
-- [ ] test: two docs with different titles; assert `q` narrows to the match
-- [ ] extend the `@Cacheable` key with `q`
+### Also uncommitted-then-committed this session (2026-07-02)
+- Branch `chore/compose-host-port-remaps` (`5812a6d`): kafka/court host ports made env-overridable
+  (`KAFKA_HOST_PORT`/`COURT_HOST_PORT`/`COURT_GRPC_HOST_PORT`) to dodge other projects squatting
+  9092/8082/9090. Neither branch pushed yet.
+- Supabase project `aeojyhopmxgtzedqughe` was paused (free-tier auto-pause) and is now restored;
+  full stack boots healthy again (all 11 containers, court/dropin/user connect to Supabase).
 
 Out of scope (parked):
 - Date-window **picker UI** on the near-me page (the API already accepts `from`/`to`)
