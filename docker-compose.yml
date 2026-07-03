@@ -30,7 +30,10 @@ services:
   kafka:
     image: apache/kafka:3.9.0
     ports:
-      - "9092:9092"
+      # Host port only for local CLI/debug; services reach kafka at kafka:9092 on the
+      # compose network. Host-side default 9094 dodges other projects squatting 9092.
+      # ponytail: env-overridable so the internal listener stays kafka:9092 untouched.
+      - "${KAFKA_HOST_PORT:-9094}:9092"
     environment:
       # Single-node KRaft (no Zookeeper): this node is both broker and controller.
       # NOTE: listeners use the empty-host form (://:9092), NOT 0.0.0.0 — the
@@ -128,8 +131,10 @@ services:
       context: .
       dockerfile: services/court-service/Dockerfile
     ports:
-      - "8082:8082"   # REST
-      - "9090:9090"   # gRPC (CourtService.GetCourt) — consumed by dropin-service
+      # Host publishes are dev-only; gateway hits court-service:8082 and dropin hits
+      # court-service:9090 over the compose network. Host defaults dodge port squatters.
+      - "${COURT_HOST_PORT:-8092}:8082"   # REST
+      - "${COURT_GRPC_HOST_PORT:-9190}:9090"   # gRPC (CourtService.GetCourt) — dropin hits court-service:9090 on the network
     environment:
       SPRING_DATASOURCE_URL: ${SUPABASE_JDBC_BASE_URL:-jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require}&currentSchema=courts
       SPRING_DATASOURCE_USERNAME: ${SUPABASE_DB_USER:-postgres}
