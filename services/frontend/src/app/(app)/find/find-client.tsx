@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useState, useTransition, type FormEvent } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -54,6 +54,10 @@ function formatPrice(price: number | null) {
 
 export function FindClient() {
   const { location, setLocation, ready } = useSearchLocation()
+  // queryInput is what's typed; query is what's been submitted (drives the re-query,
+  // so we don't fire an ES match on every keystroke).
+  const [queryInput, setQueryInput] = useState("")
+  const [query, setQuery] = useState("")
   const [skill, setSkill] = useState("")
   // ponytail: surface lives in client state only — the search read model doesn't
   // index surface yet, so it can't narrow server results. It's a real, styled
@@ -73,6 +77,7 @@ export function FindClient() {
   useEffect(() => {
     if (!ready) return
     const filters = {
+      q: query || undefined,
       skill: skill || undefined,
       maxPrice: maxPrice === "" ? undefined : Number(maxPrice),
     }
@@ -81,7 +86,7 @@ export function FindClient() {
         await findNearby(location.latitude, location.longitude, location.radiusKm, filters)
       )
     })
-  }, [ready, location.latitude, location.longitude, location.radiusKm, skill, maxPrice])
+  }, [ready, location.latitude, location.longitude, location.radiusKm, query, skill, maxPrice])
 
   function useMyLocation() {
     if (!("geolocation" in navigator)) return
@@ -102,11 +107,18 @@ export function FindClient() {
     setLocation(next)
   }
 
-  const filtersActive = Boolean(skill || surface || maxPrice)
+  const filtersActive = Boolean(query || skill || surface || maxPrice)
   function clearFilters() {
+    setQueryInput("")
+    setQuery("")
     setSkill("")
     setSurface("")
     setMaxPrice("")
+  }
+
+  function submitQuery(event: FormEvent) {
+    event.preventDefault()
+    setQuery(queryInput.trim())
   }
 
   const results = state.status === "ok" ? state.results : []
@@ -119,6 +131,20 @@ export function FindClient() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="rounded-xl border bg-card/60 p-2.5">
+        <form onSubmit={submitQuery} className="mb-2 flex items-center gap-2">
+          <Input
+            type="search"
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            placeholder="Search drop-ins by title…"
+            aria-label="Search drop-ins by title"
+            className="h-9 flex-1"
+          />
+          <Button type="submit" variant="secondary">
+            Search
+          </Button>
+        </form>
+
         <div className="flex flex-wrap items-center gap-2">
           <ChangeLocationModal location={location} onApply={applyLocation} />
           <Button variant="outline" onClick={useMyLocation} disabled={locating}>

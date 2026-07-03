@@ -24,6 +24,7 @@ export class SearchApiError extends Error {
 }
 
 export type NearbyFilters = {
+  q?: string
   skill?: string
   maxPrice?: number
 }
@@ -41,6 +42,7 @@ export async function searchNearbyDropIns(
     lng: String(lng),
     radiusKm: String(radiusKm),
   })
+  if (filters.q) qs.set("q", filters.q)
   if (filters.skill) qs.set("skill", filters.skill)
   if (filters.maxPrice != null) qs.set("maxPrice", String(filters.maxPrice))
   const response = await fetch(`${apiBaseUrl()}/search/drop-ins?${qs}`, {
