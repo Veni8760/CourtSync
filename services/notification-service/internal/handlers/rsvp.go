@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-// RSVPEvent mirrors the RSVP_CREATED / RSVP_CANCELLED contract published by dropin-service.
-// See shared/event-contracts/events.md.
+// RSVPEvent mirrors the RSVP_CREATED / RSVP_CANCELLED / DROP_IN_CANCELLED
+// contracts published by dropin-service. See shared/event-contracts/events.md.
 type RSVPEvent struct {
 	EventType       string  `json:"eventType"`
 	DropInID        string  `json:"dropInId"`
@@ -14,6 +14,7 @@ type RSVPEvent struct {
 	PaymentRequired bool    `json:"paymentRequired"`
 	Amount          float64 `json:"amount"`
 	Timestamp       string  `json:"timestamp"`
+	OrganizerUserID string  `json:"organizerUserId"`
 }
 
 // HandleDropinEvent decodes a raw dropin-events message and logs it.
@@ -31,6 +32,8 @@ func HandleDropinEvent(value []byte) {
 		log.Printf("[notification-service] RSVP_CREATED consumed for dropInId=%s userId=%s", evt.DropInID, evt.UserID)
 	case "RSVP_CANCELLED":
 		log.Printf("[notification-service] RSVP_CANCELLED consumed for dropInId=%s userId=%s", evt.DropInID, evt.UserID)
+	case "DROP_IN_CANCELLED":
+		log.Printf("[notification-service] DROP_IN_CANCELLED consumed for dropInId=%s organizerUserId=%s", evt.DropInID, evt.OrganizerUserID)
 	default:
 		log.Printf("[notification-service] ignoring event type=%s", evt.EventType)
 	}
