@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-07-03 (merged to main: Search Phase 6 #25, My drop-ins + state-aware RSVP #26, compose port remaps #24)_
+_Last updated: 2026-07-03 (merged to main: host management #27; earlier same day: Search Phase 6 #25, My drop-ins + state-aware RSVP #26, compose port remaps #24)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -307,6 +307,22 @@ fed by events. Communities deferred until after search. Search is REST at the ed
 (browser → gateway → search-service); ES is internal to that service.
 
 ## What we did this session (2026-07-03)
+- **Host management (#27, merged):** organizer can now edit + cancel a drop-in (the Hosting
+  section was read-only). Built by 3 parallel Sonnet subagents (Java / Go / frontend), then
+  verified + committed as 3 commits.
+  - dropin-service: `PUT /drop-ins/{id}` (organizer-only edit; court immutable; blocks editing a
+    cancelled drop-in → 409; `maxPlayers` < confirmed → 400; resyncs OPEN↔FULL) and
+    `PATCH /drop-ins/{id}/cancel` (idempotent soft-cancel → CANCELLED, RSVP history kept).
+    New `NotDropInOwnerException` (403, read generically), `UpdateDropInRequest`. **7 new tests**
+    (17 total pass; only the env-only `contextLoads` DB error). Boots clean → mappings registered.
+  - Event: cancel publishes **`DROP_IN_CANCELLED`** to `dropin-events` (completes the vocab next
+    to `DROP_IN_CREATED`); contract added to `shared/event-contracts/events.md`; Go
+    notification-service logs it (mirrors the RSVP cases).
+  - frontend: detail page shows **Edit + Cancel** to the host (`HostActions`) instead of the RSVP
+    panel; new `/drop-ins/[id]/edit` reuses the create form (now parametrized: seeded defaults,
+    custom action/labels, disabled court select); `updateDropIn`/`cancelDropIn` + `cancelDropInAction`;
+    `RsvpPanel` shed its dead `isHost` branch. `pnpm lint`+`build` green; edit route in the table.
+    (Cancel confirm uses `window.confirm` — `// ponytail` marks the AlertDialog upgrade path.)
 - **Merged 3 PRs to main** (squash): **#24** compose host-port remaps, **#25** Search Phase 6,
   **#26** My drop-ins + state-aware RSVP. Merged `main` frontend build green.
 - **Search Phase 6 (#25):** `GET /search/drop-ins?q=` → ES `match` on the analyzed `title`, ANDed
@@ -326,23 +342,23 @@ fed by events. Communities deferred until after search. Search is REST at the ed
 - **Ops:** restored the paused Supabase project; rebuilt frontend + dropin + search containers;
   deleted 25 untracked VolleyIQ mock zombies (reverted PR #17, no tracked imports).
 
-## What's next — Host management: edit + cancel a drop-in
-The Hosting section on `/my-drop-ins` is read-only. Make it actionable so an organizer can manage a
-session after creating it. **Done when** a host can edit a drop-in's fields and cancel it from the UI,
-the change persists, and a non-host is rejected with 403.
+## What's next — Mobile navigation drawer
+Header nav (`Home / Drop-ins / My drop-ins`) lives in a `hidden md:flex` block, so on phones the
+links vanish with no replacement — a signed-in mobile user can't navigate. Add a hamburger + drawer.
+**Done when** on a <768px viewport a signed-in user can open a menu and reach Home, Drop-ins (`/find`),
+My drop-ins, Host a drop-in, and Sign out; desktop nav is unchanged.
 
-- [ ] dropin-service: `PUT /drop-ins/{id}` — organizer-only; update title/description/time/
-      maxPlayers/price/skill; re-validate `endTime > startTime`.
-- [ ] dropin-service: soft-cancel (prefer `PATCH status=CANCELLED` over hard `DELETE` so RSVP'd
-      players keep history and a `DROP_IN_CANCELLED` event can notify later). Decide + implement.
-- [ ] Ownership guard: compare JWT `sub` to `organizerUserId`; new `NotDropInOwnerException` (403,
-      `@ResponseStatus` → no handler change). Unit-test the guard + the edit.
-- [ ] frontend: edit form at `/drop-ins/{id}/edit` (reuse `create-drop-in-form.tsx` shape) + a
-      host-only Cancel action on the detail page / Hosting cards (gate via the existing `isHost`).
-- [ ] `pnpm build` green; rebuild dropin + frontend containers.
+- [ ] Add a shadcn/Base-UI **Sheet** (or reuse the existing `dialog.tsx`) — check the registry;
+      install only if nothing suitable is already present.
+- [ ] `site-header.tsx`: a hamburger button visible only under `md:` that opens the drawer with the
+      same signed-in links + the "Host a drop-in" CTA + Sign out (reuse the `signOut` action).
+- [ ] Signed-out state: just the Sign in button (no drawer needed) — keep it simple.
+- [ ] `pnpm lint` + `build` green; spot-check the drawer at mobile width; rebuild the frontend container.
 
 Out of scope (parked, later phases):
-- Mobile nav drawer — header nav links vanish under `md:` with no hamburger replacement.
+- Notify RSVP'd players on cancel (email via Resend) — the event fires + is logged, but nobody is
+  emailed yet; needs the player list (event carries only `organizerUserId`) → a design decision.
+- Un-cancel / reactivate a drop-in; hard delete; host quick-actions on the `/my-drop-ins` Hosting cards.
 - Profile page — `GET/PUT /users/me` exist; no `/profile` UI to view/edit.
 - Surface-filter indexing — add `surface` to `DropInDocument` + `DROP_IN_CREATED` so `/find`'s
   surface control filters for real (no frontend change needed after).
