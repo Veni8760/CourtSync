@@ -13,8 +13,10 @@ import com.courtsync.dropins.dropin.domain.DropIn;
 import com.courtsync.dropins.dropin.domain.DropInStatus;
 import com.courtsync.dropins.dropin.dto.CreateDropInRequest;
 import com.courtsync.dropins.dropin.dto.DropInResponse;
+import com.courtsync.dropins.dropin.dto.UpdateDropInRequest;
 import com.courtsync.dropins.dropin.exception.CourtNotFoundException;
 import com.courtsync.dropins.dropin.exception.DropInNotFoundException;
+import com.courtsync.dropins.dropin.exception.NotDropInOwnerException;
 import com.courtsync.dropins.dropin.grpc.CourtClient;
 import com.courtsync.dropins.dropin.repository.DropInRepository;
 import com.courtsync.dropins.event.DropinEventPublisher;
@@ -78,6 +80,51 @@ public class DropInService {
                 saved.getStartTime(), saved.getPrice(), saved.getSkillLevel(),
                 saved.getLatitude(), saved.getLongitude(), saved.getCity()));
 
+        return DropInResponse.from(saved);
+    }
+
+    @Transactional
+    public DropInResponse update(UUID id, UpdateDropInRequest req, UUID userId) {
+        DropIn dropIn = repository.findById(id).orElseThrow(() -> new DropInNotFoundException(id));
+        if (!dropIn.getOrganizerUserId().equals(userId)) {
+            throw new NotDropInOwnerException(id);
+        }
+        if (dropIn.getStatus() == DropInStatus.CANCELLED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot edit a cancelled drop-in");
+        }
+        if (!req.endTime().isAfter(req.startTime())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "endTime must be after startTime");
+        }
+        if (req.maxPlayers() < dropIn.getConfirmedPlayers()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "maxPlayers cannot be below confirmed players");
+        }
+        dropIn.setTitle(req.title());
+        dropIn.setDescription(req.description());
+        dropIn.setStartTime(req.startTime());
+        dropIn.setEndTime(req.endTime());
+        dropIn.setMaxPlayers(req.maxPlayers());
+        dropIn.setPrice(req.price() != null ? req.price() : BigDecimal.ZERO);
+        dropIn.setSkillLevel(req.skillLevel());
+        // Capacity may now be below/above confirmed → resync OPEN/FULL (never CANCELLED here).
+        dropIn.setStatus(dropIn.getConfirmedPlayers() >= req.maxPlayers() ? DropInStatus.FULL : DropInStatus.OPEN);
+        DropIn saved = repository.save(dropIn);
+        log.info("Drop-in updated: id={} organizer={}", saved.getId(), userId);
+        return DropInResponse.from(saved);
+    }
+
+    @Transactional
+    public DropInResponse cancel(UUID id, UUID userId) {
+        DropIn dropIn = repository.findById(id).orElseThrow(() -> new DropInNotFoundException(id));
+        if (!dropIn.getOrganizerUserId().equals(userId)) {
+            throw new NotDropInOwnerException(id);
+        }
+        if (dropIn.getStatus() == DropInStatus.CANCELLED) {
+            return DropInResponse.from(dropIn); // idempotent no-op, no event
+        }
+        dropIn.setStatus(DropInStatus.CANCELLED);
+        DropIn saved = repository.save(dropIn);
+        events.publishDropInCancelled(DropinEvents.DropInCancelled.of(saved.getId(), userId));
+        log.info("Drop-in cancelled: id={} organizer={}", saved.getId(), userId);
         return DropInResponse.from(saved);
     }
 

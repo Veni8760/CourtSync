@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 
 import { requireUser } from "@/lib/auth"
 import {
+  cancelDropIn,
   cancelRsvp,
   DropInApiError,
   rsvp,
@@ -21,6 +22,24 @@ export async function rsvpAction(
   } catch (error) {
     if (error instanceof DropInApiError) {
       return { ok: false, error: rsvpErrorMessage(error.status) }
+    }
+    throw error
+  }
+  revalidatePath(`/drop-ins/${dropInId}`)
+  return { ok: true }
+}
+
+// Organizer-only soft-cancel of the whole drop-in (not an RSVP). The backend
+// enforces ownership from the JWT; a non-owner gets a 403 surfaced as an error toast.
+export async function cancelDropInAction(
+  dropInId: string
+): Promise<RsvpActionResult> {
+  await requireUser()
+  try {
+    await cancelDropIn(dropInId)
+  } catch (error) {
+    if (error instanceof DropInApiError) {
+      return { ok: false, error: error.message }
     }
     throw error
   }

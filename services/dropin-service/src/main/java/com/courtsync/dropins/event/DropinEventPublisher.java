@@ -50,6 +50,10 @@ public class DropinEventPublisher {
         publish(event.eventType(), event.dropInId(), event);
     }
 
+    public void publishDropInCancelled(DropinEvents.DropInCancelled event) {
+        publish(event.eventType(), event.dropInId(), event);
+    }
+
     /** Serialize the payload to JSON and send it keyed by drop-in id. */
     private void publish(String eventType, UUID key, Object payload) {
         try {

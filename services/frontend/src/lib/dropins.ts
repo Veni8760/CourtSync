@@ -96,6 +96,29 @@ export async function createDropIn(input: CreateDropInInput) {
   return readDropInApiResponse<DropIn>(response)
 }
 
+// Organizer-only; court is immutable — the backend ignores courtId if present.
+export async function updateDropIn(id: string, input: CreateDropInInput) {
+  const response = await fetch(dropInApiUrl(`/drop-ins/${id}`), {
+    method: "PUT",
+    headers: await authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(input),
+    cache: "no-store",
+  })
+  return readDropInApiResponse<DropIn>(response)
+}
+
+// Organizer-only soft-cancel — status flips to CANCELLED.
+export async function cancelDropIn(id: string) {
+  const response = await fetch(dropInApiUrl(`/drop-ins/${id}/cancel`), {
+    method: "PATCH",
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
+  if (!response.ok) {
+    throw new DropInApiError(await getErrorMessage(response), response.status)
+  }
+}
+
 // WHO is RSVPing comes from the JWT on the backend — no userId here.
 export async function rsvp(dropInId: string) {
   const response = await fetch(dropInApiUrl(`/drop-ins/${dropInId}/rsvp`), {

@@ -11,6 +11,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { HostActions } from "@/components/drop-ins/host-actions"
 import { RsvpPanel } from "@/components/drop-ins/rsvp-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -141,12 +142,18 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RsvpPanel
-              dropInId={dropIn.id}
-              disabled={dropIn.spotsLeft === 0}
-              isHost={isHost}
-              hasRsvp={hasRsvp}
-            />
+            {isHost ? (
+              <HostActions
+                dropInId={dropIn.id}
+                cancelled={dropIn.status === "CANCELLED"}
+              />
+            ) : (
+              <RsvpPanel
+                dropInId={dropIn.id}
+                disabled={dropIn.spotsLeft === 0}
+                hasRsvp={hasRsvp}
+              />
+            )}
           </CardContent>
         </Card>
       </section>

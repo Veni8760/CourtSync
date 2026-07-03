@@ -7,8 +7,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.courtsync.dropins.common.JwtPrincipal;
 import com.courtsync.dropins.dropin.dto.CreateDropInRequest;
 import com.courtsync.dropins.dropin.dto.DropInResponse;
+import com.courtsync.dropins.dropin.dto.UpdateDropInRequest;
 import com.courtsync.dropins.dropin.service.DropInService;
 
 import jakarta.validation.Valid;
@@ -59,5 +62,16 @@ public class DropInController {
     @GetMapping("/{id}")
     public DropInResponse get(@PathVariable UUID id) {
         return service.findById(id);
+    }
+
+    @PutMapping("/{id}")
+    public DropInResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateDropInRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
+        return service.update(id, request, JwtPrincipal.userId(jwt));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public DropInResponse cancel(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+        return service.cancel(id, JwtPrincipal.userId(jwt));
     }
 }

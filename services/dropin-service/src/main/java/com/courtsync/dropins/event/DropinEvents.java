@@ -72,4 +72,16 @@ public final class DropinEvents {
             return new RsvpCancelled("RSVP_CANCELLED", dropInId, userId, Instant.now());
         }
     }
+
+    /** Published after the organizer cancels a drop-in. */
+    public record DropInCancelled(
+            String eventType,
+            UUID dropInId,
+            UUID organizerUserId,
+            Instant timestamp) {
+
+        public static DropInCancelled of(UUID dropInId, UUID organizerUserId) {
+            return new DropInCancelled("DROP_IN_CANCELLED", dropInId, organizerUserId, Instant.now());
+        }
+    }
 }

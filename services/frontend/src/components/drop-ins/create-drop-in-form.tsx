@@ -49,7 +49,29 @@ function textInput(field: ControllerRenderProps<CreateDropInInput>) {
   return { ...rest, value: (value as string | number | undefined) ?? "" }
 }
 
-export function CreateDropInForm({ courts }: { courts: Court[] }) {
+// Backs BOTH create (defaults) and edit (seeded defaultValues + a different action +
+// an immutable court). Everything else — schema, pickers, validation — is shared.
+type DropInFormAction = (
+  values: CreateDropInValues
+) => Promise<{ error: string } | void>
+
+export function CreateDropInForm({
+  courts,
+  defaultValues,
+  action = submitDropIn,
+  submitLabel = "Create drop-in",
+  pendingLabel = "Creating",
+  description = "Schedule a session at one of your courts.",
+  courtEditable = true,
+}: {
+  courts: Court[]
+  defaultValues?: Partial<CreateDropInInput>
+  action?: DropInFormAction
+  submitLabel?: string
+  pendingLabel?: string
+  description?: string
+  courtEditable?: boolean
+}) {
   const [formError, setFormError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -64,6 +86,7 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
       maxPlayers: 12,
       price: 0,
       skillLevel: "Open",
+      ...defaultValues,
     },
   })
   const { control } = form
@@ -71,7 +94,7 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
   function onSubmit(values: CreateDropInValues) {
     setFormError(null)
     startTransition(async () => {
-      const result = await submitDropIn(values)
+      const result = await action(values)
       if (result?.error) setFormError(result.error)
       // success → the action redirects (throws), nothing returns here.
     })
@@ -81,7 +104,7 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
     <Card className="bg-background/80 shadow-sm">
       <CardHeader>
         <CardTitle>Drop-in details</CardTitle>
-        <CardDescription>Schedule a session at one of your courts.</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -99,7 +122,7 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
                   <Select
                     value={field.value}
                     onValueChange={field.onChange}
-                    disabled={isPending}
+                    disabled={isPending || !courtEditable}
                     items={courts.map((court) => ({
                       value: court.id,
                       label: `${court.name}${court.city ? ` — ${court.city}` : ""}`,
@@ -285,11 +308,13 @@ export function CreateDropInForm({ courts }: { courts: Court[] }) {
       <CardFooter className="justify-between gap-3 border-t">
         <div className="flex items-center gap-2 text-xs/relaxed text-muted-foreground">
           <HugeiconsIcon icon={VolleyballIcon} />
-          The court is validated by court-service over gRPC on submit.
+          {courtEditable
+            ? "The court is validated by court-service over gRPC on submit."
+            : "The court can't be changed after a drop-in is created."}
         </div>
         <Button type="submit" form="create-drop-in-form" disabled={isPending}>
           <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
-          {isPending ? "Creating" : "Create drop-in"}
+          {isPending ? pendingLabel : submitLabel}
         </Button>
       </CardFooter>
     </Card>
