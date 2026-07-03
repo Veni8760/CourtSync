@@ -46,6 +46,11 @@ Every event carries an `eventType` discriminator and an ISO-8601 `timestamp`.
 { "eventType": "RSVP_CANCELLED", "dropInId": "uuid", "userId": "uuid", "timestamp": "2026-06-09T12:00:00Z" }
 ```
 
+### DROP_IN_CANCELLED — `dropin-events`
+```json
+{ "eventType": "DROP_IN_CANCELLED", "dropInId": "uuid", "organizerUserId": "uuid", "timestamp": "2026-06-09T12:00:00Z" }
+```
+
 ### PAYMENT_SUCCEEDED — `payment-events`
 ```json
 { "eventType": "PAYMENT_SUCCEEDED", "paymentId": "uuid", "dropInId": "uuid", "userId": "uuid", "amount": 10.00, "currency": "CAD", "timestamp": "2026-06-09T12:00:00Z" }
@@ -65,3 +70,4 @@ Every event carries an `eventType` discriminator and an ISO-8601 `timestamp`.
 
 `notification-service` (Go) currently decodes `dropin-events` into the RSVP shape and
 logs `RSVP_CREATED` / `RSVP_CANCELLED` (see `services/notification-service/internal/handlers/rsvp.go`).
+It also logs `DROP_IN_CANCELLED` events (organizer-initiated cancellation) from the same topic.
