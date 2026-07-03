@@ -30,6 +30,7 @@ import {
   formatPrice,
   formatStatus,
   getDropIn,
+  getMyRsvpStatus,
 } from "@/lib/dropins"
 import { cn } from "@/lib/utils"
 
@@ -40,7 +41,7 @@ type DropInDetailPageProps = {
 export const dynamic = "force-dynamic"
 
 export default async function DropInDetailPage({ params }: DropInDetailPageProps) {
-  await requireUser()
+  const user = await requireUser()
   const { id } = await params
 
   let dropIn
@@ -53,7 +54,11 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
     throw error
   }
 
-  const courtName = await resolveCourtName(dropIn.courtId)
+  const isHost = user.id === dropIn.organizerUserId
+  const [courtName, hasRsvp] = await Promise.all([
+    resolveCourtName(dropIn.courtId),
+    resolveHasRsvp(isHost, dropIn.id),
+  ])
   const isClosed = dropIn.status !== "OPEN"
 
   return (
@@ -128,13 +133,20 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
 
         <Card className="bg-background/80 shadow-sm">
           <CardHeader>
-            <CardTitle>Your RSVP</CardTitle>
+            <CardTitle>{isHost ? "Hosting" : "Your RSVP"}</CardTitle>
             <CardDescription>
-              Claim a spot, or cancel a previous RSVP.
+              {isHost
+                ? "You're the organizer of this drop-in."
+                : "Claim a spot, or cancel a previous RSVP."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RsvpPanel dropInId={dropIn.id} disabled={dropIn.spotsLeft === 0} />
+            <RsvpPanel
+              dropInId={dropIn.id}
+              disabled={dropIn.spotsLeft === 0}
+              isHost={isHost}
+              hasRsvp={hasRsvp}
+            />
           </CardContent>
         </Card>
       </section>
@@ -148,6 +160,17 @@ async function resolveCourtName(courtId: string) {
     return court.name
   } catch {
     return `Court ${courtId.slice(0, 8)}…`
+  }
+}
+
+// Hosts never RSVP; for everyone else, a failed status check defaults to
+// not-RSVP'd (shows the RSVP button) rather than 500-ing the detail page.
+async function resolveHasRsvp(isHost: boolean, dropInId: string) {
+  if (isHost) return false
+  try {
+    return (await getMyRsvpStatus(dropInId)).hasRsvp
+  } catch {
+    return false
   }
 }
 

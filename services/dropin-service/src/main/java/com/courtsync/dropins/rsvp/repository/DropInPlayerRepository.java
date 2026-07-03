@@ -5,8 +5,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.courtsync.dropins.rsvp.domain.DropInPlayer;
+import com.courtsync.dropins.rsvp.domain.RsvpStatus;
 
 /**
  * Data access for RSVPs. Spring Data derives the SQL from the method NAMES.
@@ -23,4 +26,15 @@ public interface DropInPlayerRepository extends JpaRepository<DropInPlayer, UUID
 
     /** All players for a drop-in's detail view. */
     List<DropInPlayer> findByDropInId(UUID dropInId);
+
+    /**
+     * A user's RSVP rows in a given status, WITH the drop-in eagerly loaded — the
+     * "my drop-ins I RSVP'd to" list. The {@code join fetch} avoids an N+1 (one
+     * extra SELECT per row for the lazy {@code dropIn}) since we map every row to
+     * its drop-in.
+     */
+    @Query("select p from DropInPlayer p join fetch p.dropIn "
+         + "where p.userId = :userId and p.rsvpStatus = :status")
+    List<DropInPlayer> findWithDropInByUserIdAndRsvpStatus(
+            @Param("userId") UUID userId, @Param("status") RsvpStatus status);
 }

@@ -37,6 +37,12 @@ export async function SiteHeader({
             <Link href="/find" className="transition-colors hover:text-foreground">
               Drop-ins
             </Link>
+            <Link
+              href="/my-drop-ins"
+              className="transition-colors hover:text-foreground"
+            >
+              My drop-ins
+            </Link>
           </nav>
         ) : null}
 

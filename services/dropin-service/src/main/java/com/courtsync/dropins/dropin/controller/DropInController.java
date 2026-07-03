@@ -49,6 +49,13 @@ public class DropInController {
         return service.findAll();
     }
 
+    // Literal path — Spring resolves it ahead of the /{id} pattern below, so
+    // "hosted" is never parsed as a drop-in id.
+    @GetMapping("/hosted")
+    public List<DropInResponse> hosted(@AuthenticationPrincipal Jwt jwt) {
+        return service.findByOrganizer(JwtPrincipal.userId(jwt));
+    }
+
     @GetMapping("/{id}")
     public DropInResponse get(@PathVariable UUID id) {
         return service.findById(id);

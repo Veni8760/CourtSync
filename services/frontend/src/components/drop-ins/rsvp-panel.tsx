@@ -12,9 +12,13 @@ import { Button } from "@/components/ui/button"
 export function RsvpPanel({
   dropInId,
   disabled,
+  isHost,
+  hasRsvp,
 }: {
   dropInId: string
   disabled: boolean
+  isHost: boolean
+  hasRsvp: boolean
 }) {
   const [isPending, startTransition] = useTransition()
 
@@ -32,21 +36,42 @@ export function RsvpPanel({
     })
   }
 
+  // You can't RSVP to a drop-in you're running.
+  if (isHost) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        You&apos;re hosting this drop-in.
+      </p>
+    )
+  }
+
+  // Already in → the only action is to cancel. (After either mutation the detail
+  // page revalidates and re-renders this with the fresh hasRsvp, so the button
+  // flips on its own — no client-side RSVP state to keep in sync.)
+  if (hasRsvp) {
+    return (
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium text-foreground">
+          You&apos;re in for this drop-in.
+        </p>
+        <Button
+          variant="outline"
+          disabled={isPending}
+          onClick={() => handle(cancelRsvpAction, "RSVP cancelled")}
+          className="w-fit"
+        >
+          {isPending ? "Working…" : "Cancel RSVP"}
+        </Button>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-wrap gap-3">
-      <Button
-        disabled={isPending || disabled}
-        onClick={() => handle(rsvpAction, "RSVP confirmed")}
-      >
-        {isPending ? "Working…" : "RSVP"}
-      </Button>
-      <Button
-        variant="outline"
-        disabled={isPending}
-        onClick={() => handle(cancelRsvpAction, "RSVP cancelled")}
-      >
-        Cancel RSVP
-      </Button>
-    </div>
+    <Button
+      disabled={isPending || disabled}
+      onClick={() => handle(rsvpAction, "RSVP confirmed")}
+    >
+      {isPending ? "Working…" : "RSVP"}
+    </Button>
   )
 }

@@ -58,6 +58,34 @@ export async function getDropIn(id: string) {
   return readDropInApiResponse<DropIn>(response)
 }
 
+// Drop-ins the signed-in user has a CONFIRMED RSVP for. WHO comes from the JWT.
+export async function listMyRsvps() {
+  const response = await fetch(dropInApiUrl("/drop-ins/rsvps/me"), {
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
+  return readDropInApiResponse<DropIn[]>(response)
+}
+
+// Drop-ins the signed-in user organizes.
+export async function listMyHostedDropIns() {
+  const response = await fetch(dropInApiUrl("/drop-ins/hosted"), {
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
+  return readDropInApiResponse<DropIn[]>(response)
+}
+
+// Whether the signed-in user already holds a CONFIRMED RSVP for this drop-in —
+// lets the detail page render one correct action instead of both buttons.
+export async function getMyRsvpStatus(dropInId: string) {
+  const response = await fetch(dropInApiUrl(`/drop-ins/${dropInId}/rsvp/me`), {
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
+  return readDropInApiResponse<{ hasRsvp: boolean }>(response)
+}
+
 export async function createDropIn(input: CreateDropInInput) {
   const response = await fetch(dropInApiUrl("/drop-ins"), {
     method: "POST",

@@ -1,6 +1,7 @@
 package com.courtsync.dropins.rsvp.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -9,12 +10,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.courtsync.dropins.dropin.domain.DropIn;
+import com.courtsync.dropins.dropin.dto.DropInResponse;
 import com.courtsync.dropins.dropin.service.DropInService;
 import com.courtsync.dropins.event.DropinEventPublisher;
 import com.courtsync.dropins.event.DropinEvents;
 import com.courtsync.dropins.rsvp.domain.DropInPlayer;
 import com.courtsync.dropins.rsvp.domain.PaymentStatus;
 import com.courtsync.dropins.rsvp.domain.RsvpStatus;
+import com.courtsync.dropins.rsvp.dto.MyRsvpStatusResponse;
 import com.courtsync.dropins.rsvp.dto.RsvpResponse;
 import com.courtsync.dropins.rsvp.exception.DuplicateRsvpException;
 import com.courtsync.dropins.rsvp.repository.DropInPlayerRepository;
@@ -100,5 +103,27 @@ public class RsvpService {
                 dropInId, userId, dropIn.getConfirmedPlayers(), dropIn.getMaxPlayers());
 
         events.publishRsvpCancelled(DropinEvents.RsvpCancelled.of(dropInId, userId));
+    }
+
+    /**
+     * The drop-ins this user has a CONFIRMED RSVP for. A cross-aggregate read in
+     * the allowed direction (rsvp → dropin): the fetched player rows carry their
+     * drop-in, which we surface via the existing DropInResponse.
+     */
+    @Transactional(readOnly = true)
+    public List<DropInResponse> myRsvps(UUID userId) {
+        return playerRepository
+                .findWithDropInByUserIdAndRsvpStatus(userId, RsvpStatus.CONFIRMED).stream()
+                .map(p -> DropInResponse.from(p.getDropIn()))
+                .toList();
+    }
+
+    /** Whether this user currently holds a CONFIRMED RSVP for the given drop-in. */
+    @Transactional(readOnly = true)
+    public MyRsvpStatusResponse myStatus(UUID dropInId, UUID userId) {
+        boolean hasRsvp = playerRepository.findByDropInIdAndUserId(dropInId, userId)
+                .filter(p -> p.getRsvpStatus() == RsvpStatus.CONFIRMED)
+                .isPresent();
+        return new MyRsvpStatusResponse(hasRsvp);
     }
 }

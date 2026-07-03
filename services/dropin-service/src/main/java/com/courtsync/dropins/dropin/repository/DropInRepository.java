@@ -1,5 +1,6 @@
 package com.courtsync.dropins.dropin.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,4 +27,7 @@ public interface DropInRepository extends JpaRepository<DropIn, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from DropIn d where d.id = :id")
     Optional<DropIn> findByIdForUpdate(@Param("id") UUID id);
+
+    /** Drop-ins a given user organizes — the "drop-ins I host" list. */
+    List<DropIn> findByOrganizerUserId(UUID organizerUserId);
 }

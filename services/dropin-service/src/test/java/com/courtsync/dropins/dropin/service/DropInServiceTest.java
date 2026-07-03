@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.courtsync.dropins.dropin.domain.DropIn;
 import com.courtsync.dropins.dropin.dto.CreateDropInRequest;
+import com.courtsync.dropins.dropin.dto.DropInResponse;
 import com.courtsync.dropins.dropin.exception.CourtNotFoundException;
 import com.courtsync.dropins.dropin.grpc.CourtClient;
 import com.courtsync.dropins.dropin.grpc.CourtClient.CourtView;
@@ -77,5 +79,19 @@ class DropInServiceTest {
 
         assertThatThrownBy(() -> service.create(request(courtId), UUID.randomUUID()))
                 .isInstanceOf(CourtNotFoundException.class);
+    }
+
+    @Test
+    void findByOrganizer_mapsThatOrganizersDropIns() {
+        UUID organizer = UUID.randomUUID();
+        DropIn a = new DropIn();
+        a.setId(UUID.randomUUID());
+        DropIn b = new DropIn();
+        b.setId(UUID.randomUUID());
+        when(repository.findByOrganizerUserId(organizer)).thenReturn(List.of(a, b));
+
+        assertThat(service.findByOrganizer(organizer))
+                .extracting(DropInResponse::id)
+                .containsExactly(a.getId(), b.getId());
     }
 }
