@@ -12,12 +12,10 @@ import { Button } from "@/components/ui/button"
 export function RsvpPanel({
   dropInId,
   disabled,
-  isHost,
   hasRsvp,
 }: {
   dropInId: string
   disabled: boolean
-  isHost: boolean
   hasRsvp: boolean
 }) {
   const [isPending, startTransition] = useTransition()
@@ -34,15 +32,6 @@ export function RsvpPanel({
         toast.error(result.error)
       }
     })
-  }
-
-  // You can't RSVP to a drop-in you're running.
-  if (isHost) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        You&apos;re hosting this drop-in.
-      </p>
-    )
   }
 
   // Already in → the only action is to cancel. (After either mutation the detail
