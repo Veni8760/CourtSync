@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-07-02 (Search Phase 6 backend — keyword/title full-text search — done on a branch)_
+_Last updated: 2026-07-03 (merged to main: Search Phase 6 #25, My drop-ins + state-aware RSVP #26, compose port remaps #24)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -270,10 +270,13 @@ cobalt + rally-yellow + sand on court-ink, Archivo / Inter / Geist Mono). No new
 </details>
 
 ## What's unfinished / open questions
-- [ ] **Rebuild the docker `frontend` container to serve the new UI** — :3001 still runs the
-  pre-#20/#21/#22 image (`docker compose up -d --build frontend`). Verified via host dev server only.
-- [ ] **Keep Elasticsearch in the default `up`** — it was found stopped this session; `/find`
+- [x] **Rebuild the docker `frontend` container to serve the new UI** — done 2026-07-03 (rebuilt with
+  Phase 6 + My-drop-ins; `/`=200, `/find`/`/my-drop-ins` gated, `/login`=200).
+- [ ] **Keep Elasticsearch in the default `up`** — it was found stopped a prior session; `/find`
   500s without it. Confirm it's not gated behind a profile that's easy to forget.
+- [ ] **Supabase free-tier auto-pause bites after ~1 week idle** — project `aeojyhopmxgtzedqughe`
+  pauses; DB services then crash on connect with `ENOTFOUND tenant/user … not found`. Fix = restore
+  it from the Supabase dashboard, then `docker compose up`. (Restored 2026-07-03.)
 - [ ] Surface filter is UI-only until the search read model indexes `surface` (small backend
   follow-up: add `surface` to `DropInDocument` + the `DROP_IN_CREATED` event, then the existing
   control filters for real with no frontend change).
@@ -303,41 +306,50 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## Search Phase 6 — keyword/title full-text search (backend DONE, branch `feat/search-keyword-title` `1b195f3`, NOT pushed)
-The one ES strength not yet exercised — **full-text** — is now wired. `GET /search/drop-ins?...&q=smash`
-runs an ES `match` on the analyzed `title`, ANDed with the geo radius.
+## What we did this session (2026-07-03)
+- **Merged 3 PRs to main** (squash): **#24** compose host-port remaps, **#25** Search Phase 6,
+  **#26** My drop-ins + state-aware RSVP. Merged `main` frontend build green.
+- **Search Phase 6 (#25):** `GET /search/drop-ins?q=` → ES `match` on the analyzed `title`, ANDed
+  with the geo radius; blank `q` → plain geo; `q` in the Redis cache key. `/find` keyword box fires
+  on submit (not per keystroke). Verified: 6/6 search-service tests, container boot, real-ES
+  tokenized match (`beginner` → "Beginner Friendly Drop-in").
+- **My drop-ins + state-aware RSVP (#26):**
+  - dropin-service: `GET /drop-ins/rsvps/me` (joined), `GET /drop-ins/{id}/rsvp/me` (has-RSVP),
+    `GET /drop-ins/hosted` (organized). my-RSVPs/status live in `rsvp/` (join-fetch, no N+1); hosted
+    is a pure `dropin/` organizer filter. 7/7 unit tests; boots clean; all 3 routes 401 (wired).
+  - frontend: new `/my-drop-ins` (Joined + Hosting) reusing `DropInCard`/`Empty`/`RouteLoadingState`;
+    header nav link; detail page computes `isHost` + fetches RSVP status → `RsvpPanel` renders ONE
+    action ("You're hosting this" / "Cancel RSVP" / "RSVP"), relying on the existing `revalidatePath`
+    (no client RSVP state).
+- **#24:** kafka/court host ports env-overridable (`KAFKA_HOST_PORT`/`COURT_HOST_PORT`/
+  `COURT_GRPC_HOST_PORT`) to dodge other projects squatting 9092/8082/9090.
+- **Ops:** restored the paused Supabase project; rebuilt frontend + dropin + search containers;
+  deleted 25 untracked VolleyIQ mock zombies (reverted PR #17, no tracked imports).
 
-- [x] Added derived repo method `findByLocationNearAndTitle` (geo_distance + `match` on `title`);
-      `findNearby` branches to it only when `q` is non-blank (kept the derived-query style over a
-      native query — same idiom as the rest, and boot-time parse validates it)
-- [x] `SearchController`: optional `@RequestParam q`; `NearbyFilters` gained `q` + `hasKeyword()`
-- [x] `@Cacheable` key extended with `q` (keyworded vs plain queries cache separately)
-- [x] tests: `keywordRoutesToTitleMatchQuery` + `blankKeywordIsIgnored` (6/6 module green)
-- [x] **Verified live at the ES layer:** indexed 2 docs, `q=beginner` returned only the "Beginner
-      Friendly Drop-in" doc within radius (tokenized/case-insensitive), geo-only returned both.
-      Container boots clean (Spring Data parsed the derived query).
-- [x] **frontend near-me: keyword search box on `/find`** (`19634d7`) — submitted-query state so the
-      ES match fires on submit/Enter, not per keystroke; threaded through `NearbyFilters`, clear-filters,
-      active flag. `pnpm lint` + `pnpm build` green; frontend container rebuilt (serves new UI: `/`=200,
-      `/find`=307→login, `/login`=200).
-- [ ] **Not verified live (auth-gated):** full HTTP round-trip through the JWT endpoint / clicking the
-      search box in-browser — live Supabase requires email confirmation, couldn't mint a token or log in
-      without changing project settings. Backend proven via unit + ES-direct; frontend via build.
+## What's next — Host management: edit + cancel a drop-in
+The Hosting section on `/my-drop-ins` is read-only. Make it actionable so an organizer can manage a
+session after creating it. **Done when** a host can edit a drop-in's fields and cancel it from the UI,
+the change persists, and a non-host is rejected with 403.
 
-### Also uncommitted-then-committed this session (2026-07-02)
-- Branch `chore/compose-host-port-remaps` (`5812a6d`): kafka/court host ports made env-overridable
-  (`KAFKA_HOST_PORT`/`COURT_HOST_PORT`/`COURT_GRPC_HOST_PORT`) to dodge other projects squatting
-  9092/8082/9090. Neither branch pushed yet.
-- Supabase project `aeojyhopmxgtzedqughe` was paused (free-tier auto-pause) and is now restored;
-  full stack boots healthy again (all 11 containers, court/dropin/user connect to Supabase).
+- [ ] dropin-service: `PUT /drop-ins/{id}` — organizer-only; update title/description/time/
+      maxPlayers/price/skill; re-validate `endTime > startTime`.
+- [ ] dropin-service: soft-cancel (prefer `PATCH status=CANCELLED` over hard `DELETE` so RSVP'd
+      players keep history and a `DROP_IN_CANCELLED` event can notify later). Decide + implement.
+- [ ] Ownership guard: compare JWT `sub` to `organizerUserId`; new `NotDropInOwnerException` (403,
+      `@ResponseStatus` → no handler change). Unit-test the guard + the edit.
+- [ ] frontend: edit form at `/drop-ins/{id}/edit` (reuse `create-drop-in-form.tsx` shape) + a
+      host-only Cancel action on the detail page / Hosting cards (gate via the existing `isHost`).
+- [ ] `pnpm build` green; rebuild dropin + frontend containers.
 
-Out of scope (parked):
-- Date-window **picker UI** on the near-me page (the API already accepts `from`/`to`)
-- Re-run the **RSVP → notification** e2e (RSVP_CREATED → notification-service logs) — separate event flow, not yet runtime-verified this session
-- Clean up the test courts/drop-ins left in hosted DB + ES (no DELETE endpoints; clear directly)
-Other parked items:
-- `PUT /users/{id}` (MASTER lists it; small follow-up to the user vertical)
-- MASTER.md §8.6/§10.3 row-lock booking language contradicts the decided ReserveSlot/ReleaseSlot gRPC design — reconcile in a MASTER edit
-- Migrate Kafka event payloads JSON → Protobuf (touches Go + frontend TS)
-- Communities Service (deferred until search ships)
-- Later: WebSocket chat, Resend email, Stripe, k8s, Rust analytics
+Out of scope (parked, later phases):
+- Mobile nav drawer — header nav links vanish under `md:` with no hamburger replacement.
+- Profile page — `GET/PUT /users/me` exist; no `/profile` UI to view/edit.
+- Surface-filter indexing — add `surface` to `DropInDocument` + `DROP_IN_CREATED` so `/find`'s
+  surface control filters for real (no frontend change needed after).
+- Date-window **picker UI** on `/find` (the search API already accepts `from`/`to`).
+- Live e2e once logged in (auth-gated by Supabase email confirm): keyword search + full RSVP flow
+  (RSVP → `/my-drop-ins` → detail flips to Cancel → host sees "You're hosting this").
+- RSVP → notification e2e (RSVP_CREATED → notification-service logs).
+- Clean up test courts/drop-ins left in hosted DB + ES (no DELETE endpoints; clear directly).
+- `PUT /users/{id}`; reconcile MASTER §8.6/§10.3 row-lock language vs ReserveSlot/ReleaseSlot;
+  Kafka JSON → Protobuf; Communities service; later WebSocket chat / Resend / Stripe / k8s / Rust.
