@@ -87,6 +87,12 @@ public class DropInService {
     }
 
     @Transactional(readOnly = true)
+    public List<DropInResponse> findByOrganizer(UUID organizerUserId) {
+        return repository.findByOrganizerUserId(organizerUserId).stream()
+                .map(DropInResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
     public DropInResponse findById(UUID id) {
         DropIn dropIn = repository.findById(id)
                 .orElseThrow(() -> new DropInNotFoundException(id));
