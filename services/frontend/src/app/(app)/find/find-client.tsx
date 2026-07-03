@@ -9,7 +9,6 @@ import {
   Calendar03Icon,
   Cancel01Icon,
   Location01Icon,
-  Search01Icon,
   SlidersHorizontalIcon,
 } from "@hugeicons/core-free-icons"
 
@@ -133,20 +132,14 @@ export function FindClient() {
     <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="rounded-xl border bg-card/60 p-2.5">
         <form onSubmit={submitQuery} className="mb-2 flex items-center gap-2">
-          <div className="relative flex-1">
-            <HugeiconsIcon
-              icon={Search01Icon}
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              type="search"
-              value={queryInput}
-              onChange={(event) => setQueryInput(event.target.value)}
-              placeholder="Search drop-ins by title…"
-              aria-label="Search drop-ins by title"
-              className="h-9 pl-9"
-            />
-          </div>
+          <Input
+            type="search"
+            value={queryInput}
+            onChange={(event) => setQueryInput(event.target.value)}
+            placeholder="Search drop-ins by title…"
+            aria-label="Search drop-ins by title"
+            className="h-9 flex-1"
+          />
           <Button type="submit" variant="secondary">
             Search
           </Button>
