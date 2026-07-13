@@ -36,7 +36,7 @@ public class DropInSearchService {
     // (the "sub-second" win). 60s TTL.
     @Cacheable(cacheNames = CacheConfig.NEARBY_CACHE,
             key = "T(java.lang.Math).round(#lat*1000) + ':' + T(java.lang.Math).round(#lng*1000) + ':' + #radiusKm"
-                    + " + ':' + #filters.q() + ':' + #filters.skill() + ':' + #filters.maxPrice()"
+                    + " + ':' + #filters.q() + ':' + #filters.skill() + ':' + #filters.surface() + ':' + #filters.maxPrice()"
                     + " + ':' + #filters.from() + ':' + #filters.to()")
     public List<DropInSearchResult> findNearby(double lat, double lng, double radiusKm, NearbyFilters filters) {
         GeoPoint center = new GeoPoint(lat, lng);
@@ -58,6 +58,9 @@ public class DropInSearchService {
 
     private static boolean matches(DropInDocument doc, NearbyFilters f) {
         if (f.skill() != null && !f.skill().equalsIgnoreCase(doc.getSkillLevel())) {
+            return false;
+        }
+        if (f.surface() != null && !f.surface().equalsIgnoreCase(doc.getSurface())) {
             return false;
         }
         if (f.maxPrice() != null && (doc.getPrice() == null || doc.getPrice() > f.maxPrice())) {

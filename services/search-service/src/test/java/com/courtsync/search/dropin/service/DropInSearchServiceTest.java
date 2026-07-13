@@ -63,11 +63,13 @@ class DropInSearchServiceTest {
 
         DropInDocument cheapBeginnerSat = doc("a", 43.66, -79.39);
         cheapBeginnerSat.setSkillLevel("Beginner");
+        cheapBeginnerSat.setSurface("INDOOR");
         cheapBeginnerSat.setPrice(10.0);
         cheapBeginnerSat.setStartTime(sat);
 
         DropInDocument pricyAdvancedSun = doc("b", 43.67, -79.40);
         pricyAdvancedSun.setSkillLevel("Advanced");
+        pricyAdvancedSun.setSurface("BEACH");
         pricyAdvancedSun.setPrice(30.0);
         pricyAdvancedSun.setStartTime(sun);
 
@@ -75,14 +77,17 @@ class DropInSearchServiceTest {
                 .thenReturn(List.of(cheapBeginnerSat, pricyAdvancedSun));
 
         // skill filter
-        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, "Beginner", null, null, null)))
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, "Beginner", null, null, null, null)))
+                .extracting(DropInSearchResult::id).containsExactly("a");
+        // surface filter
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, null, "INDOOR", null, null, null)))
                 .extracting(DropInSearchResult::id).containsExactly("a");
         // maxPrice filter
-        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, null, 15.0, null, null)))
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters(null, null, null, 15.0, null, null)))
                 .extracting(DropInSearchResult::id).containsExactly("a");
         // date-window filter (Saturday only)
         assertThat(service.findNearby(lat, lng, 50,
-                new NearbyFilters(null, null, null, sat.minusSeconds(3600), sat.plusSeconds(3600))))
+                new NearbyFilters(null, null, null, null, sat.minusSeconds(3600), sat.plusSeconds(3600))))
                 .extracting(DropInSearchResult::id).containsExactly("a");
         // no filter → both
         assertThat(service.findNearby(lat, lng, 50, NearbyFilters.NONE))
@@ -98,7 +103,7 @@ class DropInSearchServiceTest {
         when(repository.findByLocationNearAndTitle(any(GeoPoint.class), any(), any()))
                 .thenReturn(List.of(match));
 
-        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters("beginner", null, null, null, null)))
+        assertThat(service.findNearby(lat, lng, 50, new NearbyFilters("beginner", null, null, null, null, null)))
                 .extracting(DropInSearchResult::id).containsExactly("kw");
     }
 
@@ -108,7 +113,7 @@ class DropInSearchServiceTest {
         when(repository.findByLocationNear(any(GeoPoint.class), any()))
                 .thenReturn(List.of(doc("x", 43.66, -79.39)));
 
-        assertThat(service.findNearby(43.6532, -79.3832, 50, new NearbyFilters("  ", null, null, null, null)))
+        assertThat(service.findNearby(43.6532, -79.3832, 50, new NearbyFilters("  ", null, null, null, null, null)))
                 .extracting(DropInSearchResult::id).containsExactly("x");
     }
 }

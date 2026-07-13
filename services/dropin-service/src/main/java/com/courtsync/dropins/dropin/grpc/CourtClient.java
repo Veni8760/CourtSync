@@ -32,7 +32,7 @@ public class CourtClient {
     private final CourtServiceBlockingStub courtServiceStub;
 
     /** Just the court fields dropin-service denormalizes onto a drop-in. */
-    public record CourtView(Double latitude, Double longitude, String city) {
+    public record CourtView(String surface, Double latitude, Double longitude, String city) {
     }
 
     /**
@@ -52,6 +52,7 @@ public class CourtClient {
             // proto `optional` → use hasX() so an absent coordinate stays null,
             // never a fabricated (0,0).
             return Optional.of(new CourtView(
+                    c.getSurface(),
                     c.hasLatitude() ? c.getLatitude() : null,
                     c.hasLongitude() ? c.getLongitude() : null,
                     c.hasCity() ? c.getCity() : null));

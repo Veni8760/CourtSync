@@ -7,9 +7,9 @@ import java.time.Instant;
  * (meaning "don't filter on this"). A parameter object so the service signature
  * and the cache key stay readable as filters grow.
  */
-public record NearbyFilters(String q, String skill, Double maxPrice, Instant from, Instant to) {
+public record NearbyFilters(String q, String skill, String surface, Double maxPrice, Instant from, Instant to) {
 
-    public static final NearbyFilters NONE = new NearbyFilters(null, null, null, null, null);
+    public static final NearbyFilters NONE = new NearbyFilters(null, null, null, null, null, null);
 
     /** True when a non-blank keyword query was supplied (drives the ES match query). */
     public boolean hasKeyword() {

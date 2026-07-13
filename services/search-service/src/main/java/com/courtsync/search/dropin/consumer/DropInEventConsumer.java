@@ -60,6 +60,7 @@ public class DropInEventConsumer {
         doc.setStartTime(e.startTime());
         doc.setPrice(e.price());
         doc.setSkillLevel(e.skillLevel());
+        doc.setSurface(e.surface());
         doc.setCity(e.city());
         // Only set the geo_point when both coordinates are present — never (0,0).
         if (e.latitude() != null && e.longitude() != null) {

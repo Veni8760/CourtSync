@@ -43,6 +43,9 @@ public class DropInDocument {
     private String skillLevel;
 
     @Field(type = FieldType.Keyword)
+    private String surface;
+
+    @Field(type = FieldType.Keyword)
     private String courtId;
 
     @Field(type = FieldType.Keyword)
