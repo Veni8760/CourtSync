@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { buttonVariants } from "@/components/ui/button"
 import { getIsSignedIn } from "@/lib/auth"
 import { cn } from "@/lib/utils"
+import { MobileNav } from "./mobile-nav"
 import { signOut } from "./site-header-actions"
 
 export async function SiteHeader({
@@ -51,12 +52,15 @@ export async function SiteHeader({
             <>
               <Link
                 href="/drop-ins/create"
-                className={cn(buttonVariants({ variant: "default" }))}
+                className={cn(
+                  buttonVariants({ variant: "default" }),
+                  "hidden md:inline-flex"
+                )}
               >
                 <HugeiconsIcon icon={Add01Icon} data-icon="inline-start" />
                 Host a drop-in
               </Link>
-              <form action={signOut}>
+              <form action={signOut} className="hidden md:block">
                 <button
                   type="submit"
                   className={cn(buttonVariants({ variant: "outline" }))}
@@ -64,6 +68,7 @@ export async function SiteHeader({
                   Sign out
                 </button>
               </form>
+              <MobileNav />
             </>
           ) : (
             <Link
