@@ -36,6 +36,15 @@ export class UserApiError extends Error {
   }
 }
 
+export async function getCurrentUserProfile(accessToken: string) {
+  const response = await fetch(userApiUrl("/users/me"), {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  })
+
+  return readUserApiResponse<CurrentUserProfile>(response)
+}
+
 export async function upsertCurrentUserProfile(
   input: CurrentUserProfileInput,
   accessToken: string
