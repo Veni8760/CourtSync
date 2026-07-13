@@ -9,6 +9,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 
 import { DropInCard } from "@/components/drop-ins/drop-in-card"
+import { HostActions } from "@/components/drop-ins/host-actions"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -64,6 +65,7 @@ export default async function MyDropInsPage() {
           icon={UserGroupIcon}
           title="Hosting"
           dropIns={hosting}
+          hostActions
           emptyTitle="You're not hosting anything yet"
           emptyDescription="Host a drop-in and it'll show up here."
         />
@@ -76,12 +78,14 @@ function DropInSection({
   icon,
   title,
   dropIns,
+  hostActions = false,
   emptyTitle,
   emptyDescription,
 }: {
   icon: ComponentProps<typeof HugeiconsIcon>["icon"]
   title: string
   dropIns: DropIn[]
+  hostActions?: boolean
   emptyTitle: string
   emptyDescription: string
 }) {
@@ -94,9 +98,19 @@ function DropInSection({
 
       {dropIns.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {dropIns.map((dropIn) => (
-            <DropInCard key={dropIn.id} dropIn={dropIn} />
-          ))}
+          {dropIns.map((dropIn) =>
+            hostActions ? (
+              <div key={dropIn.id} className="flex flex-col gap-2">
+                <DropInCard dropIn={dropIn} />
+                <HostActions
+                  dropInId={dropIn.id}
+                  cancelled={dropIn.status === "CANCELLED"}
+                />
+              </div>
+            ) : (
+              <DropInCard key={dropIn.id} dropIn={dropIn} />
+            )
+          )}
         </div>
       ) : (
         <Empty className="border bg-background">
