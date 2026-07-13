@@ -33,7 +33,7 @@ Every event carries an `eventType` discriminator and an ISO-8601 `timestamp`.
 
 ### DROP_IN_CREATED — `dropin-events`
 ```json
-{ "eventType": "DROP_IN_CREATED", "dropInId": "uuid", "courtId": "uuid", "organizerUserId": "uuid", "startTime": "2026-06-12T19:00:00Z", "timestamp": "2026-06-09T12:00:00Z" }
+{ "eventType": "DROP_IN_CREATED", "dropInId": "uuid", "courtId": "uuid", "organizerUserId": "uuid", "startTime": "2026-06-12T19:00:00Z", "surface": "INDOOR", "timestamp": "2026-06-09T12:00:00Z" }
 ```
 
 ### RSVP_CREATED — `dropin-events`

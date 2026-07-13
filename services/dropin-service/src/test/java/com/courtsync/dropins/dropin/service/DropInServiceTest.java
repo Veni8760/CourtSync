@@ -84,7 +84,7 @@ class DropInServiceTest {
     void create_stampsCourtLocationOntoThePublishedEvent() {
         UUID courtId = UUID.randomUUID();
         when(courtClient.getCourt(courtId))
-                .thenReturn(Optional.of(new CourtView(43.65, -79.38, "Toronto")));
+                .thenReturn(Optional.of(new CourtView("INDOOR", 43.65, -79.38, "Toronto")));
         when(repository.save(any(DropIn.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.create(request(courtId), UUID.randomUUID());

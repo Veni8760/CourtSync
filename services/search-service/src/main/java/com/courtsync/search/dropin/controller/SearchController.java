@@ -35,9 +35,10 @@ public class SearchController {
             @RequestParam(defaultValue = "10") double radiusKm,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String skill,
+            @RequestParam(required = false) String surface,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Instant from,
             @RequestParam(required = false) Instant to) {
-        return service.findNearby(lat, lng, radiusKm, new NearbyFilters(q, skill, maxPrice, from, to));
+        return service.findNearby(lat, lng, radiusKm, new NearbyFilters(q, skill, surface, maxPrice, from, to));
     }
 }

@@ -21,6 +21,7 @@ public record DropInCreatedEvent(
         Instant startTime,
         Double price,
         String skillLevel,
+        String surface,
         Double latitude,
         Double longitude,
         String city) {

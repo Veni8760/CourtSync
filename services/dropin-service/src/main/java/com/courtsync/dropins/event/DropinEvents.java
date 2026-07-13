@@ -34,16 +34,17 @@ public final class DropinEvents {
             Instant startTime,
             BigDecimal price,
             String skillLevel,
+            String surface,
             Double latitude,
             Double longitude,
             String city,
             Instant timestamp) {
 
         public static DropInCreated of(UUID dropInId, UUID courtId, UUID organizerUserId, String title,
-                Instant startTime, BigDecimal price, String skillLevel,
+                Instant startTime, BigDecimal price, String skillLevel, String surface,
                 Double latitude, Double longitude, String city) {
             return new DropInCreated("DROP_IN_CREATED", dropInId, courtId, organizerUserId, title,
-                    startTime, price, skillLevel, latitude, longitude, city, Instant.now());
+                    startTime, price, skillLevel, surface, latitude, longitude, city, Instant.now());
         }
     }
 

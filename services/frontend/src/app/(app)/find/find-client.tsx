@@ -62,9 +62,6 @@ export function FindClient() {
   const [queryInput, setQueryInput] = useState("")
   const [query, setQuery] = useState("")
   const [skill, setSkill] = useState("")
-  // ponytail: surface lives in client state only — the search read model doesn't
-  // index surface yet, so it can't narrow server results. It's a real, styled
-  // control today and starts filtering the moment the index carries surface.
   const [surface, setSurface] = useState("")
   const [maxPrice, setMaxPrice] = useState("")
   const [dateRange, setDateRange] = useState<DateRange>()
@@ -88,6 +85,7 @@ export function FindClient() {
     const filters = {
       q: query || undefined,
       skill: skill || undefined,
+      surface: surface || undefined,
       maxPrice: maxPrice === "" ? undefined : Number(maxPrice),
       from: fromIso,
       to: toIso,
@@ -97,7 +95,7 @@ export function FindClient() {
         await findNearby(location.latitude, location.longitude, location.radiusKm, filters)
       )
     })
-  }, [ready, location.latitude, location.longitude, location.radiusKm, query, skill, maxPrice, fromIso, toIso])
+  }, [ready, location.latitude, location.longitude, location.radiusKm, query, skill, surface, maxPrice, fromIso, toIso])
 
   function useMyLocation() {
     if (!("geolocation" in navigator)) return
@@ -217,13 +215,6 @@ export function FindClient() {
             ) : null}
           </div>
         </div>
-
-        {surface ? (
-          <p className="mt-2 px-1 text-xs text-muted-foreground">
-            Showing every surface for now — surface filtering lands with the next
-            search-index update.
-          </p>
-        ) : null}
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">

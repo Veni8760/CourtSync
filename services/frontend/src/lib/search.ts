@@ -26,6 +26,7 @@ export class SearchApiError extends Error {
 export type NearbyFilters = {
   q?: string
   skill?: string
+  surface?: string
   maxPrice?: number
   // ISO-8601 instants (…Z); the backend filters start time to from <= start <= to.
   from?: string
@@ -47,6 +48,7 @@ export async function searchNearbyDropIns(
   })
   if (filters.q) qs.set("q", filters.q)
   if (filters.skill) qs.set("skill", filters.skill)
+  if (filters.surface) qs.set("surface", filters.surface)
   if (filters.maxPrice != null) qs.set("maxPrice", String(filters.maxPrice))
   if (filters.from) qs.set("from", filters.from)
   if (filters.to) qs.set("to", filters.to)
