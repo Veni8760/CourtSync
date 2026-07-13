@@ -13,6 +13,7 @@ const links = [
   { href: "/home", label: "Home" },
   { href: "/find", label: "Drop-ins" },
   { href: "/my-drop-ins", label: "My drop-ins" },
+  { href: "/profile", label: "Profile" },
 ]
 
 // ponytail: side-drawer built on the Base UI dialog primitive directly —
