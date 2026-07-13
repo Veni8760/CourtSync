@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition, type FormEvent } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { endOfDay, startOfDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -52,18 +53,6 @@ const dateFormatter = new Intl.DateTimeFormat("en-CA", {
 function formatPrice(price: number | null) {
   if (price == null) return null
   return price === 0 ? "Free" : `$${price.toFixed(2)}`
-}
-
-function startOfDay(date: Date) {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-function endOfDay(date: Date) {
-  const d = new Date(date)
-  d.setHours(23, 59, 59, 999)
-  return d
 }
 
 export function FindClient() {
