@@ -1,6 +1,6 @@
 # CourtSync — Working Status
 
-_Last updated: 2026-07-03 (merged to main: host management #27; earlier same day: Search Phase 6 #25, My drop-ins + state-aware RSVP #26, compose port remaps #24)_
+_Last updated: 2026-07-13 (merged to main: mobile nav drawer #28, date-window filter #29, surface search filter #30, profile page #31, hosting quick-actions #32)_
 
 Source of truth for the whole build: **`MASTER.md`** at repo root. This file is just the
 per-session handoff (done / unfinished / next).
@@ -277,9 +277,8 @@ cobalt + rally-yellow + sand on court-ink, Archivo / Inter / Geist Mono). No new
 - [ ] **Supabase free-tier auto-pause bites after ~1 week idle** — project `aeojyhopmxgtzedqughe`
   pauses; DB services then crash on connect with `ENOTFOUND tenant/user … not found`. Fix = restore
   it from the Supabase dashboard, then `docker compose up`. (Restored 2026-07-03.)
-- [ ] Surface filter is UI-only until the search read model indexes `surface` (small backend
-  follow-up: add `surface` to `DropInDocument` + the `DROP_IN_CREATED` event, then the existing
-  control filters for real with no frontend change).
+- [x] Surface filter now indexes `surface` on `DropInDocument` + `DROP_IN_CREATED` and filters for
+  real (#30, 2026-07-13). Caveat: ES docs created before #30 lack `surface` → filtered out until reindexed.
 - [ ] Redesign polish not yet exercised live: card↔pin hover-sync color, "Use my location"
   (needs a real geolocation grant), create-drop-in happy path on the new tokens. Low risk (build
   passed); spot-check in the browser.
@@ -306,65 +305,65 @@ A separate **Search Service** is justified *here* (not ceremony) because it owns
 fed by events. Communities deferred until after search. Search is REST at the edge
 (browser → gateway → search-service); ES is internal to that service.
 
-## What we did this session (2026-07-03)
-- **Host management (#27, merged):** organizer can now edit + cancel a drop-in (the Hosting
-  section was read-only). Built by 3 parallel Sonnet subagents (Java / Go / frontend), then
-  verified + committed as 3 commits.
-  - dropin-service: `PUT /drop-ins/{id}` (organizer-only edit; court immutable; blocks editing a
-    cancelled drop-in → 409; `maxPlayers` < confirmed → 400; resyncs OPEN↔FULL) and
-    `PATCH /drop-ins/{id}/cancel` (idempotent soft-cancel → CANCELLED, RSVP history kept).
-    New `NotDropInOwnerException` (403, read generically), `UpdateDropInRequest`. **7 new tests**
-    (17 total pass; only the env-only `contextLoads` DB error). Boots clean → mappings registered.
-  - Event: cancel publishes **`DROP_IN_CANCELLED`** to `dropin-events` (completes the vocab next
-    to `DROP_IN_CREATED`); contract added to `shared/event-contracts/events.md`; Go
-    notification-service logs it (mirrors the RSVP cases).
-  - frontend: detail page shows **Edit + Cancel** to the host (`HostActions`) instead of the RSVP
-    panel; new `/drop-ins/[id]/edit` reuses the create form (now parametrized: seeded defaults,
-    custom action/labels, disabled court select); `updateDropIn`/`cancelDropIn` + `cancelDropInAction`;
-    `RsvpPanel` shed its dead `isHost` branch. `pnpm lint`+`build` green; edit route in the table.
-    (Cancel confirm uses `window.confirm` — `// ponytail` marks the AlertDialog upgrade path.)
-- **Merged 3 PRs to main** (squash): **#24** compose host-port remaps, **#25** Search Phase 6,
-  **#26** My drop-ins + state-aware RSVP. Merged `main` frontend build green.
-- **Search Phase 6 (#25):** `GET /search/drop-ins?q=` → ES `match` on the analyzed `title`, ANDed
-  with the geo radius; blank `q` → plain geo; `q` in the Redis cache key. `/find` keyword box fires
-  on submit (not per keystroke). Verified: 6/6 search-service tests, container boot, real-ES
-  tokenized match (`beginner` → "Beginner Friendly Drop-in").
-- **My drop-ins + state-aware RSVP (#26):**
-  - dropin-service: `GET /drop-ins/rsvps/me` (joined), `GET /drop-ins/{id}/rsvp/me` (has-RSVP),
-    `GET /drop-ins/hosted` (organized). my-RSVPs/status live in `rsvp/` (join-fetch, no N+1); hosted
-    is a pure `dropin/` organizer filter. 7/7 unit tests; boots clean; all 3 routes 401 (wired).
-  - frontend: new `/my-drop-ins` (Joined + Hosting) reusing `DropInCard`/`Empty`/`RouteLoadingState`;
-    header nav link; detail page computes `isHost` + fetches RSVP status → `RsvpPanel` renders ONE
-    action ("You're hosting this" / "Cancel RSVP" / "RSVP"), relying on the existing `revalidatePath`
-    (no client RSVP state).
-- **#24:** kafka/court host ports env-overridable (`KAFKA_HOST_PORT`/`COURT_HOST_PORT`/
-  `COURT_GRPC_HOST_PORT`) to dodge other projects squatting 9092/8082/9090.
-- **Ops:** restored the paused Supabase project; rebuilt frontend + dropin + search containers;
-  deleted 25 untracked VolleyIQ mock zombies (reverted PR #17, no tracked imports).
+## What we did this session (2026-07-13)
+Five frontend/search polish features, each build+lint green, PR'd and squash-merged to main.
+**None have been driven in a browser yet** (auth-gated; the running container predates most) — see
+"What's next".
 
-## What's next — Mobile navigation drawer
-Header nav (`Home / Drop-ins / My drop-ins`) lives in a `hidden md:flex` block, so on phones the
-links vanish with no replacement — a signed-in mobile user can't navigate. Add a hamburger + drawer.
-**Done when** on a <768px viewport a signed-in user can open a menu and reach Home, Drop-ins (`/find`),
-My drop-ins, Host a drop-in, and Sign out; desktop nav is unchanged.
+- **Mobile nav drawer (#28, merged):** `components/layout/mobile-nav.tsx` — hamburger (`md:hidden`)
+  → right-side drawer on the **existing Base UI `Dialog` primitive** (NOT shadcn's `sheet`, which is
+  Radix and would add a second dialog stack to an all-Base-UI repo). Links wrap in `Dialog.Close` so a
+  tap navigates + closes; reuses the `signOut` action. Desktop nav unchanged.
+- **Date-window filter on /find (#29, merged):** the search API already accepted `from`/`to`
+  (ISO-8601 `Instant`s) — added the UI. New `components/ui/date-range-picker.tsx` (Popover +
+  `Calendar mode="range"`, the canonical shadcn recipe — shadcn ships no prebuilt range component).
+  Picked days are **inclusive**: from→start-of-day, to→end-of-day, matching backend `from <= start <= to`.
+  Ponytail review swapped hand-rolled `startOfDay`/`endOfDay` for **date-fns** (already installed).
+- **Surface search filter (#30, merged):** `/find`'s surface control was UI-only. **Event-only, no DB
+  migration** (nothing queries `drop_ins` by surface — only search does). `court.proto` already had
+  `surface`; stamped it onto `DROP_IN_CREATED`, indexed it as a keyword on `DropInDocument`, filtered
+  in `DropInSearchService.matches` (mirrors `skill`), added it to the Redis `@Cacheable` key. Built by a
+  subagent; it caught the cache-key collision I'd have missed. Both Java services compile; new unit test
+  asserts INDOOR/BEACH narrow.
+- **Profile page (#31, merged):** `GET/PUT /users/me` existed with no UI. `/profile` route: server
+  component fetches (new `getCurrentUserProfile` helper), client form (`useActionState` + `Field`,
+  mirroring `login-form`) edits first/last name + skill level; email read-only. Server action
+  re-validates skill against the enum at the trust boundary (`NONE`/invalid → null). Profile link in
+  desktop nav + mobile drawer.
+- **Hosting quick-actions (#32, merged):** the `/my-drop-ins` Hosting cards had no actions. Render the
+  existing `HostActions` (Edit link + soft-cancel toast) under each card via a `hostActions` flag on the
+  shared `DropInSection`. Pure reuse; Joined cards untouched.
+- **Ops:** started Docker Desktop (was down); brought the **full stack up** built from the merged
+  branch (`docker compose up -d --build`) — all services UP, frontend on **:3001** (`FRONTEND_PORT`;
+  3000 is Daniel's other app), court-service on host **8092** (`COURT_HOST_PORT`, dodges 8082 clash).
+  Supabase (`aeojyhopmxgtzedqughe`) was awake. **Blocked on live UI verification** — no test-account
+  creds in the repo, and that Supabase project isn't in the MCP-reachable account, so no session could
+  be minted. Stack left running.
 
-- [ ] Add a shadcn/Base-UI **Sheet** (or reuse the existing `dialog.tsx`) — check the registry;
-      install only if nothing suitable is already present.
-- [ ] `site-header.tsx`: a hamburger button visible only under `md:` that opens the drawer with the
-      same signed-in links + the "Host a drop-in" CTA + Sign out (reuse the `signOut` action).
-- [ ] Signed-out state: just the Sign in button (no drawer needed) — keep it simple.
-- [ ] `pnpm lint` + `build` green; spot-check the drawer at mobile width; rebuild the frontend container.
+## What's next — Live verification pass of the 5 shipped features
+All five features above are build+lint green but unverified in a browser. Close the gap before stacking
+more UI. **Done when** each of the 5 has been exercised signed-in at <768px and desktop, and any bug
+found is fixed (or filed as a follow-up item here).
+
+- [ ] Rebuild the frontend container so it serves #28–#32: `docker compose up -d --build frontend`
+      (the running image predates them). Confirm stack health first (`docker compose ps`).
+- [ ] Sign in (Daniel has the test creds; Claude does not) at `http://localhost:3001`.
+- [ ] **#28 drawer:** at 375px, open the hamburger → reach Home / Drop-ins / My drop-ins / Profile /
+      Host a drop-in / Sign out; desktop nav unchanged.
+- [ ] **#29 date filter:** on `/find`, pick a date range → results narrow to that window; Clear resets.
+- [ ] **#30 surface:** create a fresh drop-in (so the ES doc carries `surface`), then filter by its
+      surface on `/find` → it appears; other surfaces exclude it. NOTE: pre-existing ES docs have no
+      `surface` and get filtered out until reindexed — expected.
+- [ ] **#31 profile:** `/profile` loads current values; edit name + skill → "Profile saved"; reload persists.
+- [ ] **#32 hosting actions:** `/my-drop-ins` Hosting cards show Edit + Cancel; cancel flips to the
+      "cancelled" state.
 
 Out of scope (parked, later phases):
 - Notify RSVP'd players on cancel (email via Resend) — the event fires + is logged, but nobody is
   emailed yet; needs the player list (event carries only `organizerUserId`) → a design decision.
-- Un-cancel / reactivate a drop-in; hard delete; host quick-actions on the `/my-drop-ins` Hosting cards.
-- Profile page — `GET/PUT /users/me` exist; no `/profile` UI to view/edit.
-- Surface-filter indexing — add `surface` to `DropInDocument` + `DROP_IN_CREATED` so `/find`'s
-  surface control filters for real (no frontend change needed after).
-- Date-window **picker UI** on `/find` (the search API already accepts `from`/`to`).
-- Live e2e once logged in (auth-gated by Supabase email confirm): keyword search + full RSVP flow
-  (RSVP → `/my-drop-ins` → detail flips to Cancel → host sees "You're hosting this").
+- Un-cancel / reactivate a drop-in; hard delete.
+- ES surface backfill — a reindex so pre-#30 drop-ins carry `surface` (no DELETE/reindex endpoint yet).
+- Date-window **picker UI is done** (#29), but no relative presets ("this weekend", "next 7 days").
 - RSVP → notification e2e (RSVP_CREATED → notification-service logs).
 - Clean up test courts/drop-ins left in hosted DB + ES (no DELETE endpoints; clear directly).
 - `PUT /users/{id}`; reconcile MASTER §8.6/§10.3 row-lock language vs ReserveSlot/ReleaseSlot;
