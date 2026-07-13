@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition, type FormEvent } from "react"
 import dynamic from "next/dynamic"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { endOfDay, startOfDay } from "date-fns"
+import type { DateRange } from "react-day-picker"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Calendar03Icon,
@@ -13,6 +15,7 @@ import {
 } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -64,6 +67,7 @@ export function FindClient() {
   // control today and starts filtering the moment the index carries surface.
   const [surface, setSurface] = useState("")
   const [maxPrice, setMaxPrice] = useState("")
+  const [dateRange, setDateRange] = useState<DateRange>()
   const [state, setState] = useState<NearbySearchState | { status: "idle" }>({
     status: "idle",
   })
@@ -74,19 +78,26 @@ export function FindClient() {
 
   // Re-query whenever the location or filters change (after the first client read
   // of the persisted location, so we don't fire against the SSR default first).
+  // Picked days are inclusive: widen from → start of that day, to → end of that day,
+  // matching the backend's from <= start <= to window. toISOString() → UTC ISO-8601.
+  const fromIso = dateRange?.from ? startOfDay(dateRange.from).toISOString() : undefined
+  const toIso = dateRange?.to ? endOfDay(dateRange.to).toISOString() : undefined
+
   useEffect(() => {
     if (!ready) return
     const filters = {
       q: query || undefined,
       skill: skill || undefined,
       maxPrice: maxPrice === "" ? undefined : Number(maxPrice),
+      from: fromIso,
+      to: toIso,
     }
     startTransition(async () => {
       setState(
         await findNearby(location.latitude, location.longitude, location.radiusKm, filters)
       )
     })
-  }, [ready, location.latitude, location.longitude, location.radiusKm, query, skill, maxPrice])
+  }, [ready, location.latitude, location.longitude, location.radiusKm, query, skill, maxPrice, fromIso, toIso])
 
   function useMyLocation() {
     if (!("geolocation" in navigator)) return
@@ -107,13 +118,14 @@ export function FindClient() {
     setLocation(next)
   }
 
-  const filtersActive = Boolean(query || skill || surface || maxPrice)
+  const filtersActive = Boolean(query || skill || surface || maxPrice || dateRange?.from)
   function clearFilters() {
     setQueryInput("")
     setQuery("")
     setSkill("")
     setSurface("")
     setMaxPrice("")
+    setDateRange(undefined)
   }
 
   function submitQuery(event: FormEvent) {
@@ -191,6 +203,11 @@ export function FindClient() {
               placeholder="Max $"
               aria-label="Max price"
               className="h-9 w-24"
+            />
+            <DateRangePicker
+              value={dateRange}
+              onChange={setDateRange}
+              className="w-40"
             />
             {filtersActive ? (
               <Button variant="ghost" onClick={clearFilters} aria-label="Clear filters">

@@ -27,6 +27,9 @@ export type NearbyFilters = {
   q?: string
   skill?: string
   maxPrice?: number
+  // ISO-8601 instants (…Z); the backend filters start time to from <= start <= to.
+  from?: string
+  to?: string
 }
 
 // Server-side: queries the geo-search endpoint through the gateway with the
@@ -45,6 +48,8 @@ export async function searchNearbyDropIns(
   if (filters.q) qs.set("q", filters.q)
   if (filters.skill) qs.set("skill", filters.skill)
   if (filters.maxPrice != null) qs.set("maxPrice", String(filters.maxPrice))
+  if (filters.from) qs.set("from", filters.from)
+  if (filters.to) qs.set("to", filters.to)
   const response = await fetch(`${apiBaseUrl()}/search/drop-ins?${qs}`, {
     headers: await authHeaders(),
     cache: "no-store",
