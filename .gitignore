@@ -70,9 +70,5 @@ test-results/
 .agents/
 skills-lock.json
 
-# ---------- Design docs (kept locally, not committed) ----------
-courtsync_mvp_design_document.md
-docs/superpowers/specs/
-
 .codex/
 .vscode

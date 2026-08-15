@@ -2,8 +2,8 @@ spring:
   application:
     name: dropin-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require&currentSchema=dropins}
-    username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres}}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require&currentSchema=dropins}
+    username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres.aeojyhopmxgtzedqughe}}
     password: ${SPRING_DATASOURCE_PASSWORD:${SUPABASE_DB_PASSWORD:}}
   jpa:
     hibernate:
@@ -20,8 +20,8 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       # We hand-serialize event payloads to JSON strings (matching
-      # shared/event-contracts/events.md so the Go consumer can decode them),
-      # so both key and value go out as plain strings.
+      # shared/event-contracts/events.md so every consumer decodes the same
+      # shape), so both key and value go out as plain strings.
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       # Wait for the broker leader to ack the write before treating send as done.
@@ -40,10 +40,6 @@ spring:
           address: ${COURT_GRPC_ADDRESS:static://localhost:9090}
           # Local/docker traffic is plaintext (no TLS) — gRPC defaults to TLS otherwise.
           negotiation-type: plaintext
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
 
 server:
   port: ${SERVER_PORT:8083}
