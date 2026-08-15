@@ -4,36 +4,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Source of truth
 
-**`MASTER.md`** (repo root) is the canonical spec for the entire build — architecture,
-services, Kafka events, DB tables, build order, milestones. Read it before doing anything.
-Older docs (`courtsync_mvp_design_document.md`, `docs/superpowers/specs/...`) are historical
-brainstorming from a previous **abandoned** design (a Spring Modulith monolith on Supabase +
-Stripe Connect). Do not follow them.
+**`MASTER.md`** (repo root) is the canonical spec — scope, architecture, services, Kafka
+events, DB schemas. Read it before doing anything. It describes **what is built**, not a
+wishlist: if something isn't in MASTER.md, it isn't in scope. The historical brainstorming
+docs (an abandoned Spring Modulith monolith on Supabase + Stripe Connect) have been deleted.
 
 ## Project
 
-CourtSync: a full-stack volleyball drop-in platform (discover courts, create drop-in sessions,
-RSVP, later chat/pay/search). This is a **learning project** for production-grade *polyglot
-microservices* — favor depth, correctness, and idiomatic patterns over speed.
+CourtSync: a full-stack volleyball drop-in platform — discover courts, create drop-in
+sessions, RSVP, join a waitlist, get alerted, and geo-search nearby sessions. This is a
+**learning project** for production-grade microservices — favor depth, correctness, and
+idiomatic patterns over speed.
 
-First goal is a clean microservices **skeleton** with one end-to-end flow:
-create court → create drop-in → view → RSVP → publish `RSVP_CREATED` to Kafka → consumed +
-logged by the Go notification-service. See MASTER.md §20 for the
-milestone definition.
+**Scope is fixed by the resume bullets** (MASTER.md §1). Anything outside them is bloat:
+1. Next.js frontend + Spring Boot microservices over **gRPC** for court discovery,
+   scheduling, and player flows.
+2. Event-driven backend on **Kafka + Redis** for drop-ins, RSVPs, **waitlists**, and
+   **player alerts**.
+3. Sub-second geo-search for nearby drop-ins via **Elasticsearch** indexes over Postgres.
 
 ## Architecture
 
-Polyglot microservices behind an API gateway, async via Kafka, all run with Docker Compose:
+Microservices behind an API gateway, async via Kafka, all run with Docker Compose:
 
 ```
 Next.js frontend → API Gateway (Spring Cloud Gateway) → REST → domain services → Kafka (async)
 ```
 
-Services (`services/`): `api-gateway`, `user-service`, `court-service`, `dropin-service`
-(all **Java Spring Boot**, Maven), plus `notification-service` (**Go** — Kafka consumer +
-`/health`). `frontend/` is Next.js. (`messaging`, `payment`, `search` are in the MASTER.md
-vision but not yet built — start minimal, add them back when a real flow needs them.)
-Infra: hosted Supabase Postgres, local Kafka (KRaft, no Zookeeper), Redis. Later: Elasticsearch, k8s, Rust analytics.
+Six services (`services/`), all **Java Spring Boot + Maven** except the frontend:
+`api-gateway`, `user-service`, `court-service`, `dropin-service`, `search-service`,
+`notification-service`; `frontend/` is Next.js. Infra: hosted Supabase Postgres, local
+Kafka (KRaft, no Zookeeper), Redis, Elasticsearch.
+
+The two Kafka consumers are read-model services — each owns a projection built from
+`dropin-events`, never a shared table: search-service projects into Elasticsearch,
+notification-service into a per-user alert feed.
 
 Key rules (from MASTER.md):
 - Build in **vertical slices**, not whole-backend-then-whole-frontend.
@@ -67,8 +72,10 @@ Three distinct channels — don't conflate them:
   a separate filter chain. (The old "the gRPC port isn't covered by the servlet chain" assumption
   was only half true — spring-grpc has its *own* security layer.)
 - **Service → service, async ("X happened, others may react"): Kafka.** Still plain JSON strings
-  per `shared/event-contracts/events.md` (the Go + search consumers decode it). **Deferred:**
-  migrating Kafka payloads to Protobuf (touches Go + search + frontend TS + likely a schema
+  per `shared/event-contracts/events.md` (search + notification consumers decode it, each in its
+  own consumer group). Delivery is at-least-once, so a consumer must be idempotent —
+  notification-service does this with a UNIQUE `event_key` per (user, drop-in). **Deferred:**
+  migrating Kafka payloads to Protobuf (touches both consumers + frontend TS + likely a schema
   registry) — a separate phase, not done yet.
 
 ## Java package structure (standard for ALL Java services)
@@ -133,17 +140,43 @@ Every REST error is an **RFC 9457 ProblemDetail** (`application/problem+json`), 
 
 - **Frontend**: Next.js + TypeScript + Tailwind + shadcn/ui + TanStack Query. pnpm. Port 3000.
 - **Java services**: Java 21 (toolchain Java 26 ok) + Spring Boot 4.0.x (Spring Framework 7) +
-  **Maven** (`./mvnw`). Ports 8080–8087 (gateway 8080, user 8081, court 8082, dropin 8083,
-  messaging 8084, payment 8085, notification 8086, search 8087). Boot-4 specifics that bit us
+  **Maven** (`./mvnw`). Ports: gateway 8080, user 8081, court 8082 (+ gRPC 9090), dropin 8083,
+  notification 8086, search 8087. Boot-4 specifics that bit us
   during the 3.5→4.0 migration: autoconfig is modular, so Kafka needs
   `spring-boot-starter-kafka` (the raw `spring-kafka` artifact no longer triggers
   autoconfiguration); the default JSON mapper is **Jackson 3** (`tools.jackson.*`, unchecked
   exceptions) not Jackson 2 (`com.fasterxml.jackson.*`); Hibernate 7 validates column
   nullability strictly (entity `@Column(nullable=…)` must match the DB). api-gateway uses
   Spring Cloud **2025.1.x** (the Boot-4 train) with Spring Cloud Gateway 5.0.
-- **Go service**: `notification-service` — `cmd/notification-service` + `internal/{config,health,kafka,handlers}`.
-- **DB**: hosted Supabase Postgres, one database with one schema per DB-backed service.
-- **Messaging**: Kafka topics per MASTER §9.1; the load-bearing one for the skeleton is `dropin-events`.
+- **DB**: hosted Supabase Postgres, one database with one schema per DB-backed service
+  (`users`, `courts`, `dropins`, `notifications`). Flyway owns every schema; `ddl-auto: validate`.
+- **Messaging**: Kafka topics per `shared/event-contracts/events.md`; the load-bearing one is
+  `dropin-events` (drives both the search index and the alert feed).
+- **Cache**: Redis — geo-search results in search-service, unread alert badge in
+  notification-service. Nothing else should take a Redis dependency without a real read to cache.
+
+## HARD RULE: never sign up fake email addresses
+
+**Do not call Supabase `/auth/v1/signup` with an address that isn't a real inbox** — not
+`@example.com`, not `something.test@gmail.com`, not any invented Gmail. This project uses
+Supabase's *shared* SMTP, which has strict bounce limits: every fake signup sends a
+confirmation email that hard-bounces, and enough bounces get the project's email sending
+**restricted**. This already happened once (2026-08-14) and triggered a warning from Supabase.
+
+To test an authenticated flow, in order of preference:
+
+1. **Reuse an existing confirmed account.** `select email from auth.users where
+   email_confirmed_at is not null;` — ask for the password rather than making a new user.
+2. **Run the local Supabase stack** (`supabase start`). Mail goes to Inbucket; nothing
+   leaves the machine.
+3. **Turn off email confirmation** for the dev project (Dashboard → Authentication →
+   Sign In / Providers → Email → *Confirm email* off), so signup issues a session and sends
+   no mail at all.
+4. **Custom SMTP** (Dashboard → Authentication → Emails → SMTP Settings) if real mail is
+   genuinely needed — then bounces hit your own provider's reputation, not Supabase's shared pool.
+
+If a test account does get created, delete it immediately:
+`delete from auth.users where email = '<addr>';`
 
 ## Commands
 
@@ -158,10 +191,6 @@ Every REST error is an **RFC 9457 ProblemDetail** (`application/problem+json`), 
 - `./mvnw test` — run tests
 - `./mvnw -q -DskipTests package` — build jar
 
-### Go service (`cd services/notification-service`)
-- `go run ./cmd/notification-service` — run locally
-- `go test ./...` — tests
-
 ### Frontend (`cd services/frontend`)
 - `pnpm dev` / `pnpm build` / `pnpm start` / `pnpm lint`
 
@@ -171,6 +200,16 @@ This is a recent Next.js with breaking changes from earlier versions. Consult
 `services/frontend/node_modules/next/dist/docs/` for the current API surface before writing
 frontend code — training data may reflect Next 14/15 conventions that no longer apply.
 React Compiler is enabled, so manual `useMemo`/`useCallback` are generally unnecessary.
+
+## Frontend HARD RULE: use shadcn/ui components
+
+**Never hand-roll UI that shadcn/ui already provides.** Check `src/components/ui/` first;
+if the component isn't there, add it (`pnpm dlx shadcn@latest add <component>`) rather than
+writing your own. A bare `<button>`, a hand-styled card `<div>`, a bespoke badge span, or a
+hand-written empty state counts as a defect even when it renders correctly — it drifts from
+the design tokens and drops the accessibility behaviour the primitives carry. Dropping to a
+raw element is allowed only when no registry component covers the case, and needs a one-line
+comment saying what was checked and why it didn't fit. Full rule: `services/frontend/AGENTS.md`.
 
 ## Workflow expectations (from user's global rules)
 

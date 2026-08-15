@@ -2,8 +2,8 @@ spring:
   application:
     name: user-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://db.aeojyhopmxgtzedqughe.supabase.co:5432/postgres?sslmode=require&currentSchema=users}
-    username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres}}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require&currentSchema=users}
+    username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres.aeojyhopmxgtzedqughe}}
     password: ${SPRING_DATASOURCE_PASSWORD:${SUPABASE_DB_PASSWORD:}}
   jpa:
     hibernate:

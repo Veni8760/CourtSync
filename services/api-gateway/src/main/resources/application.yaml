@@ -32,6 +32,12 @@ spring:
                 - Path=/api/search,/api/search/**
               filters:
                 - StripPrefix=1
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
+              predicates:
+                - Path=/api/alerts,/api/alerts/**
+              filters:
+                - StripPrefix=1
 
 server:
   port: ${SERVER_PORT:8080}
