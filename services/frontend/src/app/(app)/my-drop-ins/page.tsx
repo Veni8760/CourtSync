@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import {
   Calendar03Icon,
+  Clock01Icon,
   UserGroupIcon,
   VolleyballIcon,
 } from "@hugeicons/core-free-icons"
@@ -21,7 +22,12 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { requireUser } from "@/lib/auth"
-import { listMyHostedDropIns, listMyRsvps, type DropIn } from "@/lib/dropins"
+import {
+  listMyHostedDropIns,
+  listMyRsvps,
+  listMyWaitlist,
+  type DropIn,
+} from "@/lib/dropins"
 import { cn } from "@/lib/utils"
 
 export const dynamic = "force-dynamic"
@@ -32,8 +38,9 @@ export const metadata: Metadata = {
 
 export default async function MyDropInsPage() {
   await requireUser()
-  const [joined, hosting] = await Promise.all([
+  const [joined, waitlisted, hosting] = await Promise.all([
     listMyRsvps(),
+    listMyWaitlist(),
     listMyHostedDropIns(),
   ])
 
@@ -48,7 +55,7 @@ export default async function MyDropInsPage() {
             My drop-ins
           </h1>
           <p className="mt-2 text-sm/relaxed text-muted-foreground">
-            Sessions you&apos;ve joined and sessions you&apos;re hosting.
+            Sessions you&apos;ve joined, are waiting on, and are hosting.
           </p>
         </div>
       </section>
@@ -61,6 +68,17 @@ export default async function MyDropInsPage() {
           emptyTitle="No drop-ins joined yet"
           emptyDescription="Find a session near you and claim a spot."
         />
+        {/* Only rendered when there's something in it — an empty waitlist is the
+            normal case and doesn't need its own empty state. */}
+        {waitlisted.length > 0 ? (
+          <DropInSection
+            icon={Clock01Icon}
+            title="On the waitlist"
+            dropIns={waitlisted}
+            emptyTitle=""
+            emptyDescription=""
+          />
+        ) : null}
         <DropInSection
           icon={UserGroupIcon}
           title="Hosting"

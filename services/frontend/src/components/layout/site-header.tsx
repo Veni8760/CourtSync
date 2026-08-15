@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Add01Icon, VolleyballIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 
+import { AlertBell } from "@/components/alerts/alert-bell"
 import { buttonVariants } from "@/components/ui/button"
 import { getIsSignedIn } from "@/lib/auth"
 import { cn } from "@/lib/utils"
@@ -53,6 +54,9 @@ export async function SiteHeader({
         <div className="flex items-center gap-2">
           {isSignedIn ? (
             <>
+              {/* Visible at every breakpoint — a promotion off the waitlist is
+                  time-critical, so the bell doesn't hide behind the mobile menu. */}
+              <AlertBell />
               <Link
                 href="/drop-ins/create"
                 className={cn(

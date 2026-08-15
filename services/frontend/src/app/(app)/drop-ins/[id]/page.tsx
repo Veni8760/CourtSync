@@ -32,6 +32,7 @@ import {
   formatStatus,
   getDropIn,
   getMyRsvpStatus,
+  type MyRsvpStatus,
 } from "@/lib/dropins"
 import { cn } from "@/lib/utils"
 
@@ -56,11 +57,11 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
   }
 
   const isHost = user.id === dropIn.organizerUserId
-  const [courtName, hasRsvp] = await Promise.all([
+  const [courtName, rsvpStatus] = await Promise.all([
     resolveCourtName(dropIn.courtId),
-    resolveHasRsvp(isHost, dropIn.id),
+    resolveRsvpStatus(isHost, dropIn.id),
   ])
-  const isClosed = dropIn.status !== "OPEN"
+  const isCancelled = dropIn.status === "CANCELLED"
 
   return (
     <main className="min-h-screen bg-muted/30">
@@ -89,12 +90,12 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
       </section>
 
       <section className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-6 sm:px-6 lg:px-8">
-        {isClosed ? (
+        {isCancelled ? (
           <Alert variant="destructive">
             <HugeiconsIcon icon={AlertCircleIcon} />
-            <AlertTitle>This drop-in is {formatStatus(dropIn.status).toLowerCase()}</AlertTitle>
+            <AlertTitle>This drop-in was cancelled</AlertTitle>
             <AlertDescription>
-              New RSVPs may be rejected by the server.
+              The organizer called it off. New RSVPs are rejected.
             </AlertDescription>
           </Alert>
         ) : null}
@@ -138,20 +139,18 @@ export default async function DropInDetailPage({ params }: DropInDetailPageProps
             <CardDescription>
               {isHost
                 ? "You're the organizer of this drop-in."
-                : "Claim a spot, or cancel a previous RSVP."}
+                : "Claim a spot, join the waitlist, or pull out."}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isHost ? (
-              <HostActions
-                dropInId={dropIn.id}
-                cancelled={dropIn.status === "CANCELLED"}
-              />
+              <HostActions dropInId={dropIn.id} cancelled={isCancelled} />
             ) : (
               <RsvpPanel
                 dropInId={dropIn.id}
-                disabled={dropIn.spotsLeft === 0}
-                hasRsvp={hasRsvp}
+                full={dropIn.spotsLeft === 0}
+                cancelled={isCancelled}
+                status={rsvpStatus}
               />
             )}
           </CardContent>
@@ -170,14 +169,16 @@ async function resolveCourtName(courtId: string) {
   }
 }
 
+const noRsvp: MyRsvpStatus = { hasRsvp: false, rsvpStatus: null, waitlistPosition: 0 }
+
 // Hosts never RSVP; for everyone else, a failed status check defaults to
 // not-RSVP'd (shows the RSVP button) rather than 500-ing the detail page.
-async function resolveHasRsvp(isHost: boolean, dropInId: string) {
-  if (isHost) return false
+async function resolveRsvpStatus(isHost: boolean, dropInId: string) {
+  if (isHost) return noRsvp
   try {
-    return (await getMyRsvpStatus(dropInId)).hasRsvp
+    return await getMyRsvpStatus(dropInId)
   } catch {
-    return false
+    return noRsvp
   }
 }
 

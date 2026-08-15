@@ -3,6 +3,16 @@ import { apiBaseUrl, authHeaders } from "@/lib/api"
 export const dropInStatusValues = ["OPEN", "FULL", "CANCELLED"] as const
 export type DropInStatus = (typeof dropInStatusValues)[number]
 
+// Mirrors dropin-service's RsvpStatus. null when the user has no active RSVP.
+export type RsvpStatus = "CONFIRMED" | "WAITLISTED" | "CANCELLED" | null
+
+export type MyRsvpStatus = {
+  hasRsvp: boolean
+  rsvpStatus: RsvpStatus
+  // 1-based place in the queue; 0 unless rsvpStatus is WAITLISTED.
+  waitlistPosition: number
+}
+
 export type DropIn = {
   id: string
   courtId: string
@@ -76,14 +86,23 @@ export async function listMyHostedDropIns() {
   return readDropInApiResponse<DropIn[]>(response)
 }
 
-// Whether the signed-in user already holds a CONFIRMED RSVP for this drop-in —
-// lets the detail page render one correct action instead of both buttons.
+// Drop-ins the signed-in user is waitlisted for.
+export async function listMyWaitlist() {
+  const response = await fetch(dropInApiUrl("/drop-ins/rsvps/waitlist"), {
+    headers: await authHeaders(),
+    cache: "no-store",
+  })
+  return readDropInApiResponse<DropIn[]>(response)
+}
+
+// Where the signed-in user stands on this drop-in — confirmed, waitlisted (and
+// where in the queue), or neither. Lets the detail page render one correct action.
 export async function getMyRsvpStatus(dropInId: string) {
   const response = await fetch(dropInApiUrl(`/drop-ins/${dropInId}/rsvp/me`), {
     headers: await authHeaders(),
     cache: "no-store",
   })
-  return readDropInApiResponse<{ hasRsvp: boolean }>(response)
+  return readDropInApiResponse<MyRsvpStatus>(response)
 }
 
 export async function createDropIn(input: CreateDropInInput) {
@@ -143,8 +162,10 @@ export async function cancelRsvp(dropInId: string) {
 }
 
 export function rsvpErrorMessage(status: number) {
+  // A full drop-in is no longer an error — it puts you on the waitlist. A 409
+  // now only means a duplicate RSVP or a cancelled session.
   if (status === 409) {
-    return "You've already RSVP'd, or this drop-in is full."
+    return "You're already on this drop-in, or it's been cancelled."
   }
   if (status === 400) {
     return "Couldn't RSVP — the drop-in may be closed."
