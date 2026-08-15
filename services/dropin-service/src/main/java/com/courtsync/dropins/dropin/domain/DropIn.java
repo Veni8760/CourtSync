@@ -100,6 +100,15 @@ public class DropIn {
     private Instant updatedAt;
 
     /**
+     * Is there room for one more confirmed player? The RSVP flow asks this to
+     * decide between taking a spot and joining the waitlist, so that "full" stops
+     * being an error case. Only meaningful while the caller holds the row lock.
+     */
+    public boolean hasSpotsLeft() {
+        return confirmedPlayers < maxPlayers;
+    }
+
+    /**
      * Take one spot for a new RSVP. Throws if the drop-in is already full, and
      * flips status to FULL when this RSVP takes the last spot.
      *

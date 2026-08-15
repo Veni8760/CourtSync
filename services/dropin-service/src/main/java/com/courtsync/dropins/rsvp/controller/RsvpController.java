@@ -22,9 +22,9 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * REST API for RSVPs, nested under a drop-in (MASTER §8.4):
- *   POST   /drop-ins/{dropInId}/rsvp      RSVP the authenticated user
- *   DELETE /drop-ins/{dropInId}/rsvp      cancel the authenticated user's RSVP
- *   GET    /drop-ins/{dropInId}/rsvp/me   is the authenticated user RSVP'd?
+ *   POST   /drop-ins/{dropInId}/rsvp      RSVP, or join the waitlist if full
+ *   DELETE /drop-ins/{dropInId}/rsvp      cancel the RSVP or leave the waitlist
+ *   GET    /drop-ins/{dropInId}/rsvp/me   confirmed / waitlisted (+ position) / neither
  * WHO is RSVPing comes from the validated JWT (sub), not the request — so there
  * is no body and no userId in the path.
  */

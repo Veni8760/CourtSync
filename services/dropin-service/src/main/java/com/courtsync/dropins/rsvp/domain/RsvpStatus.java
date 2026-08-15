@@ -5,7 +5,9 @@ package com.courtsync.dropins.rsvp.domain;
  *   CONFIRMED  — has a confirmed spot.
  *   CANCELLED  — pulled out. We keep the row (audit trail) and flip its status
  *                rather than deleting, so history isn't lost and re-RSVP reuses it.
- *   WAITLISTED — reserved for the future waitlist feature.
+ *   WAITLISTED — the drop-in was full when they joined. Ordered by
+ *                {@code waitlisted_at}; promoted to CONFIRMED, oldest first, as
+ *                soon as a confirmed player cancels.
  */
 public enum RsvpStatus {
     CONFIRMED,

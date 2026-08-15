@@ -1,5 +1,6 @@
 package com.courtsync.dropins.rsvp.repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,4 +38,20 @@ public interface DropInPlayerRepository extends JpaRepository<DropInPlayer, UUID
          + "where p.userId = :userId and p.rsvpStatus = :status")
     List<DropInPlayer> findWithDropInByUserIdAndRsvpStatus(
             @Param("userId") UUID userId, @Param("status") RsvpStatus status);
+
+    /**
+     * The next player in line: the WAITLISTED row that has waited longest. Read
+     * under the drop-in's row lock during cancellation, so two concurrent
+     * cancellations can't promote the same person twice.
+     */
+    Optional<DropInPlayer> findFirstByDropInIdAndRsvpStatusOrderByWaitlistedAtAsc(
+            UUID dropInId, RsvpStatus rsvpStatus);
+
+    /**
+     * How many waitlisted players joined before {@code waitlistedAt} — the
+     * derived display position is this count plus one. Cheaper and race-free
+     * compared with storing (and renumbering) an integer position column.
+     */
+    long countByDropInIdAndRsvpStatusAndWaitlistedAtLessThan(
+            UUID dropInId, RsvpStatus rsvpStatus, Instant waitlistedAt);
 }

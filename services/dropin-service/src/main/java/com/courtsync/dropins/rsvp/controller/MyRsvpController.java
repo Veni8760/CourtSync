@@ -16,7 +16,8 @@ import lombok.RequiredArgsConstructor;
 
 /**
  * The authenticated user's own RSVPs, not scoped to one drop-in:
- *   GET /drop-ins/rsvps/me   drop-ins this user has a CONFIRMED RSVP for
+ *   GET /drop-ins/rsvps/me        drop-ins this user has a CONFIRMED RSVP for
+ *   GET /drop-ins/rsvps/waitlist  drop-ins this user is waitlisted for
  * Separate from RsvpController because that one is bound to
  * /drop-ins/{dropInId}/rsvp. WHO comes from the JWT (sub), never the path.
  */
@@ -30,5 +31,10 @@ public class MyRsvpController {
     @GetMapping("/me")
     public List<DropInResponse> myRsvps(@AuthenticationPrincipal Jwt jwt) {
         return service.myRsvps(JwtPrincipal.userId(jwt));
+    }
+
+    @GetMapping("/waitlist")
+    public List<DropInResponse> myWaitlist(@AuthenticationPrincipal Jwt jwt) {
+        return service.myWaitlist(JwtPrincipal.userId(jwt));
     }
 }

@@ -46,6 +46,14 @@ public class DropinEventPublisher {
         publish(event.eventType(), event.dropInId(), event);
     }
 
+    public void publishRsvpWaitlisted(DropinEvents.RsvpWaitlisted event) {
+        publish(event.eventType(), event.dropInId(), event);
+    }
+
+    public void publishRsvpPromoted(DropinEvents.RsvpPromoted event) {
+        publish(event.eventType(), event.dropInId(), event);
+    }
+
     public void publishRsvpCancelled(DropinEvents.RsvpCancelled event) {
         publish(event.eventType(), event.dropInId(), event);
     }

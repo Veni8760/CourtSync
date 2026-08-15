@@ -62,6 +62,15 @@ public class DropInPlayer {
     @Column(name = "payment_status", nullable = false)
     private PaymentStatus paymentStatus = PaymentStatus.NOT_REQUIRED;
 
+    /**
+     * When this player joined the waitlist — the FIFO ordering key. Non-null iff
+     * rsvpStatus is WAITLISTED (a DB CHECK enforces the "iff", see V3). Stamped
+     * fresh on every enqueue rather than reusing createdAt, because a re-RSVP
+     * reuses this same row and must go to the back of the queue.
+     */
+    @Column(name = "waitlisted_at")
+    private Instant waitlistedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
