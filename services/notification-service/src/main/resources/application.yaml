@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://aws-1-us-west-2.pooler.supabase.com:5432/postgres?sslmode=require&currentSchema=notifications}
+    username: ${SPRING_DATASOURCE_USERNAME:${SUPABASE_DB_USER:postgres.aeojyhopmxgtzedqughe}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${SUPABASE_DB_PASSWORD:}}
+  jpa:
+    hibernate:
+      # Flyway owns the schema. Hibernate only checks the entity matches the
+      # tables it finds, and never alters them.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: notifications
+  flyway:
+    enabled: true
+    schemas: notifications
+    default-schema: notifications
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      # Own consumer group, so notification-service and search-service each get
+      # every message on dropin-events. Start from the beginning so a fresh
+      # consumer still builds alerts for events published before it connected.
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SUPABASE_AUTH_ISSUER:https://aeojyhopmxgtzedqughe.supabase.co/auth/v1}
+
+courtsync:
+  kafka:
+    dropin-topic: ${COURTSYNC_KAFKA_DROPIN_TOPIC:dropin-events}
+
+server:
+  port: ${SERVER_PORT:8086}
